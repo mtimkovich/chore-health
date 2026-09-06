@@ -31,16 +31,16 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 
 func handleListChores(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		chores, err := listChores(db)
+		chores, err := loadPrunedChores(db)
 		if err != nil {
-			log.Println("listChores:", err)
+			log.Println("loadPrunedChores:", err)
 			writeError(w, http.StatusInternalServerError, "failed to list chores")
 			return
 		}
 
 		views := make([]ChoreView, 0, len(chores))
 		for _, c := range chores {
-			if hiddenForToday(c) {
+			if isCompletedNow(c) {
 				continue
 			}
 			views = append(views, toView(c))
@@ -50,6 +50,31 @@ func handleListChores(db *sql.DB) http.HandlerFunc {
 		// would sink to the bottom regardless of how soon it's actually due.
 		sort.Slice(views, func(i, j int) bool {
 			return views[i].HoursLeft < views[j].HoursLeft
+		})
+
+		writeJSON(w, http.StatusOK, views)
+	}
+}
+
+func handleListCompletedChores(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		chores, err := loadPrunedChores(db)
+		if err != nil {
+			log.Println("loadPrunedChores:", err)
+			writeError(w, http.StatusInternalServerError, "failed to list completed chores")
+			return
+		}
+
+		views := make([]ChoreView, 0, len(chores))
+		for _, c := range chores {
+			if !isCompletedNow(c) {
+				continue
+			}
+			views = append(views, toView(c))
+		}
+		// Most recently completed first.
+		sort.Slice(views, func(i, j int) bool {
+			return views[i].LastCompletedAt.After(views[j].LastCompletedAt)
 		})
 
 		writeJSON(w, http.StatusOK, views)
@@ -114,8 +139,10 @@ func handleUpdateChore(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// handleCompleteChore resets a recurring chore's countdown. A non-recurring
-// chore is finished for good, so completing it just removes it.
+// handleCompleteChore resets a chore's countdown to now. From there,
+// isCompletedNow decides how long it stays on the Completed tab: a
+// recurring chore until local midnight, a non-recurring one for 24 hours
+// before pruneExpiredChores deletes it for good.
 func handleCompleteChore(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -124,33 +151,17 @@ func handleCompleteChore(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		c, err := getChore(db, id)
-		if errors.Is(err, sql.ErrNoRows) {
-			writeError(w, http.StatusNotFound, "chore not found")
-			return
-		} else if err != nil {
-			log.Println("getChore:", err)
-			writeError(w, http.StatusInternalServerError, "failed to load chore")
-			return
-		}
-
-		if !c.Recurring {
-			if err := deleteChore(db, id); err != nil {
-				log.Println("deleteChore:", err)
-				writeError(w, http.StatusInternalServerError, "failed to complete chore")
-				return
-			}
-			writeJSON(w, http.StatusOK, map[string]bool{"removed": true})
-			return
-		}
-
 		if err := completeChore(db, id); err != nil {
 			log.Println("completeChore:", err)
 			writeError(w, http.StatusInternalServerError, "failed to complete chore")
 			return
 		}
-		c, err = getChore(db, id)
-		if err != nil {
+
+		c, err := getChore(db, id)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "chore not found")
+			return
+		} else if err != nil {
 			writeError(w, http.StatusInternalServerError, "failed to load chore")
 			return
 		}

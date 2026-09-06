@@ -4,6 +4,7 @@ import { formatDuration } from '../duration'
 
 const props = defineProps({
   chore: { type: Object, required: true },
+  completed: { type: Boolean, default: false },
 })
 const emit = defineEmits(['complete', 'edit', 'delete'])
 
@@ -20,6 +21,12 @@ const barColor = computed(() => {
 const statusText = computed(() => {
   const label = formatDuration(Math.abs(props.chore.hours_left))
   return props.chore.overdue ? `OVERDUE BY ${label}` : `~ ${label} LEFT`
+})
+
+const completedText = computed(() => {
+  const hoursAgo = (Date.now() - new Date(props.chore.last_completed_at).getTime()) / 3_600_000
+  if (hoursAgo < 1) return 'COMPLETED JUST NOW'
+  return `COMPLETED ${formatDuration(hoursAgo)} AGO`
 })
 
 function toggleOpen() {
@@ -46,22 +53,27 @@ function toggleOpen() {
           />
         </svg>
       </h2>
-      <span class="chevron" :class="{ open }">&#9660;</span>
+      <svg class="chevron" :class="{ open }" viewBox="0 0 24 24" fill="none">
+        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </div>
 
-    <div class="bar-track">
-      <div
-        class="bar-fill"
-        :class="barColor"
-        :style="{ width: chore.percent_remaining + '%' }"
-      ></div>
-    </div>
-    <div class="status-line" :class="{ overdue: chore.overdue }">{{ statusText }}</div>
+    <template v-if="!completed">
+      <div class="bar-track">
+        <div
+          class="bar-fill"
+          :class="barColor"
+          :style="{ width: chore.percent_remaining + '%' }"
+        ></div>
+      </div>
+      <div class="status-line" :class="{ overdue: chore.overdue }">{{ statusText }}</div>
+    </template>
+    <div v-else class="status-line completed-line">{{ completedText }}</div>
 
     <p v-if="open && chore.description" class="chore-description">{{ chore.description }}</p>
 
     <div v-if="open && !confirmingDelete" class="card-actions">
-      <button class="btn-complete" @click="emit('complete', chore)">Done</button>
+      <button v-if="!completed" class="btn-complete" @click="emit('complete', chore)">Done</button>
       <button class="btn-delete" @click="confirmingDelete = true">Delete</button>
       <button class="btn-edit" @click="emit('edit', chore)">Edit</button>
     </div>

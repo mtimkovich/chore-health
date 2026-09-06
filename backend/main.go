@@ -14,6 +14,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/chores", handleListChores(db))
+	mux.HandleFunc("GET /api/chores/completed", handleListCompletedChores(db))
 	mux.HandleFunc("POST /api/chores", handleCreateChore(db))
 	mux.HandleFunc("PUT /api/chores/{id}", handleUpdateChore(db))
 	mux.HandleFunc("POST /api/chores/{id}/complete", handleCompleteChore(db))

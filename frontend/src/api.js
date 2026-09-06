@@ -13,6 +13,10 @@ export function listChores() {
   return fetch(BASE).then(handle)
 }
 
+export function listCompletedChores() {
+  return fetch(`${BASE}/completed`).then(handle)
+}
+
 export function createChore({ name, description, intervalHours, recurring }) {
   return fetch(BASE, {
     method: 'POST',

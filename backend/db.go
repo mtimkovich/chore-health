@@ -104,3 +104,27 @@ func deleteChore(db *sql.DB, id int64) error {
 	_, err := db.Exec(`DELETE FROM chores WHERE id = ?`, id)
 	return err
 }
+
+// pruneExpiredChores permanently deletes non-recurring chores that have sat
+// completed past isCompletedNow's 24-hour window, and returns what's left.
+func pruneExpiredChores(db *sql.DB, chores []Chore) ([]Chore, error) {
+	remaining := chores[:0]
+	for _, c := range chores {
+		if !c.Recurring && hasBeenCompleted(c) && !isCompletedNow(c) {
+			if err := deleteChore(db, c.ID); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		remaining = append(remaining, c)
+	}
+	return remaining, nil
+}
+
+func loadPrunedChores(db *sql.DB) ([]Chore, error) {
+	chores, err := listChores(db)
+	if err != nil {
+		return nil, err
+	}
+	return pruneExpiredChores(db, chores)
+}

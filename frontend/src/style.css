@@ -52,6 +52,50 @@ body {
   padding: 8px;
 }
 
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 16px 20px 0;
+}
+
+.tabs button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  padding: 8px 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tabs button.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.tab-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--track);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabs button.active .tab-badge {
+  background: var(--accent);
+  color: #fff;
+}
+
 .section-label {
   font-size: 13px;
   font-weight: 700;
@@ -105,9 +149,11 @@ body {
 }
 
 .chevron {
-  color: var(--accent);
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--muted);
   transition: transform 0.15s ease;
-  font-size: 14px;
 }
 
 .chevron.open {
@@ -228,7 +274,7 @@ body {
 .add-chore-btn {
   display: block;
   width: calc(100% - 40px);
-  margin: 20px 20px 0;
+  margin: 0 20px 16px;
   padding: 14px 0;
   border: none;
   border-radius: 12px;

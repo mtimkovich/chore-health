@@ -45,18 +45,31 @@ func toView(c Chore) ChoreView {
 	}
 }
 
-// hiddenForToday reports whether a chore was just marked done and should stay
-// off the list until local midnight, so completed chores don't linger and
-// clutter the view for the rest of the day.
-func hiddenForToday(c Chore) bool {
-	if !c.Recurring || c.LastCompletedAt.Equal(c.CreatedAt) {
-		// Never been completed (a brand-new chore sets both to the same
-		// timestamp), so there's nothing to hide.
+// hasBeenCompleted reports whether a chore has ever been marked done. A
+// brand-new chore sets last_completed_at equal to created_at, so equality
+// means "never completed" without needing a separate column.
+func hasBeenCompleted(c Chore) bool {
+	return !c.LastCompletedAt.Equal(c.CreatedAt)
+}
+
+func sameLocalDay(a, b time.Time) bool {
+	a, b = a.Local(), b.Local()
+	y1, m1, d1 := a.Date()
+	y2, m2, d2 := b.Date()
+	return y1 == y2 && m1 == m2 && d1 == d2
+}
+
+// isCompletedNow reports whether a chore currently belongs on the Completed
+// tab rather than the active list. A recurring chore stays there until
+// local midnight (then it's due again, same as any other active chore); a
+// non-recurring chore stays there for a full 24 hours before being cleared
+// out entirely by pruneExpiredChores.
+func isCompletedNow(c Chore) bool {
+	if !hasBeenCompleted(c) {
 		return false
 	}
-	completed := c.LastCompletedAt.Local()
-	now := time.Now().Local()
-	y1, m1, d1 := completed.Date()
-	y2, m2, d2 := now.Date()
-	return y1 == y2 && m1 == m2 && d1 == d2
+	if c.Recurring {
+		return sameLocalDay(c.LastCompletedAt, time.Now())
+	}
+	return time.Since(c.LastCompletedAt) < 24*time.Hour
 }
