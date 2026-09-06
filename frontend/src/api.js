@@ -13,19 +13,19 @@ export function listChores() {
   return fetch(BASE).then(handle)
 }
 
-export function createChore({ name, intervalHours, recurring }) {
+export function createChore({ name, description, intervalHours, recurring }) {
   return fetch(BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, interval_hours: intervalHours, recurring }),
+    body: JSON.stringify({ name, description, interval_hours: intervalHours, recurring }),
   }).then(handle)
 }
 
-export function updateChore(id, { name, intervalHours, recurring }) {
+export function updateChore(id, { name, description, intervalHours, recurring }) {
   return fetch(`${BASE}/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, interval_hours: intervalHours, recurring }),
+    body: JSON.stringify({ name, description, interval_hours: intervalHours, recurring }),
   }).then(handle)
 }
 

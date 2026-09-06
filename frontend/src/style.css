@@ -19,7 +19,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
 }
 
 #app {
@@ -27,15 +27,14 @@ body {
   margin: 0 auto;
   min-height: 100vh;
   background: var(--bg);
-  padding-bottom: 96px;
+  padding-bottom: 32px;
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 20px 8px;
-  background: #fff;
+  padding: 28px 20px 8px;
 }
 
 .header h1 {
@@ -90,9 +89,19 @@ body {
 }
 
 .card-top h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 19px;
   font-weight: 600;
   margin: 0;
+}
+
+.recurring-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--muted);
 }
 
 .chevron {
@@ -144,6 +153,13 @@ body {
   color: var(--red);
 }
 
+.chore-description {
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
 .card-actions {
   display: flex;
   gap: 10px;
@@ -172,27 +188,55 @@ body {
   color: var(--red);
 }
 
-.fab {
-  position: fixed;
-  right: 50%;
-  transform: translateX(220px);
-  bottom: 28px;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
+.btn-edit {
+  background: #eef0fb;
+  color: var(--accent);
+}
+
+.confirm-row {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--track);
+}
+
+.confirm-text {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-buttons button {
+  flex: 1;
   border: none;
-  font-size: 28px;
-  box-shadow: 0 4px 12px rgba(43, 76, 224, 0.4);
+  border-radius: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
 }
 
-@media (max-width: 520px) {
-  .fab {
-    right: 24px;
-    transform: none;
-  }
+.btn-confirm-delete {
+  background: var(--red);
+  color: #fff;
+}
+
+.add-chore-btn {
+  display: block;
+  width: calc(100% - 40px);
+  margin: 20px 20px 0;
+  padding: 14px 0;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .modal-backdrop {
@@ -213,9 +257,27 @@ body {
   padding: 24px 20px 28px;
 }
 
-.modal h2 {
-  margin: 0 0 18px;
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.modal-header h2 {
+  margin: 0;
   font-size: 20px;
+}
+
+.modal-close {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 4px;
+  margin: -4px -4px 0 0;
+  cursor: pointer;
 }
 
 .field {
@@ -231,21 +293,45 @@ body {
 }
 
 .field input[type='text'],
-.field input[type='number'] {
+.field input[type='number'],
+.field textarea {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--track);
   border-radius: 10px;
   font-size: 15px;
+  font-family: inherit;
+  resize: vertical;
 }
 
-.interval-row {
+.label-optional {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.unit-toggle {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
-.interval-row .field {
+.unit-toggle button {
   flex: 1;
+  border: 1px solid var(--track);
+  background: #fff;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.unit-toggle button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .checkbox-row {

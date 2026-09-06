@@ -82,7 +82,7 @@ onUnmounted(() => clearInterval(refreshTimer))
     />
   </div>
 
-  <button class="fab" @click="openAdd">+</button>
+  <button class="add-chore-btn" @click="openAdd">+ Add Chore</button>
 
   <ChoreFormModal
     v-if="showForm"

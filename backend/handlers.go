@@ -12,6 +12,7 @@ import (
 
 type choreRequest struct {
 	Name          string  `json:"name"`
+	Description   string  `json:"description"`
 	IntervalHours float64 `json:"interval_hours"`
 	Recurring     bool    `json:"recurring"`
 }
@@ -39,12 +40,16 @@ func handleListChores(db *sql.DB) http.HandlerFunc {
 
 		views := make([]ChoreView, 0, len(chores))
 		for _, c := range chores {
+			if hiddenForToday(c) {
+				continue
+			}
 			views = append(views, toView(c))
 		}
-		// Most urgent (lowest percent remaining) first, matching how the
-		// Roomba app surfaces the part closest to needing attention.
+		// Soonest due first. Percent-remaining would rank by how "worn" a
+		// chore's own interval is, so a brand-new chore (always near 100%)
+		// would sink to the bottom regardless of how soon it's actually due.
 		sort.Slice(views, func(i, j int) bool {
-			return views[i].PercentRemaining < views[j].PercentRemaining
+			return views[i].HoursLeft < views[j].HoursLeft
 		})
 
 		writeJSON(w, http.StatusOK, views)
@@ -63,7 +68,7 @@ func handleCreateChore(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		c, err := createChore(db, req.Name, req.IntervalHours, req.Recurring)
+		c, err := createChore(db, req.Name, req.Description, req.IntervalHours, req.Recurring)
 		if err != nil {
 			log.Println("createChore:", err)
 			writeError(w, http.StatusInternalServerError, "failed to create chore")
@@ -91,7 +96,7 @@ func handleUpdateChore(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if err := updateChore(db, id, req.Name, req.IntervalHours, req.Recurring); err != nil {
+		if err := updateChore(db, id, req.Name, req.Description, req.IntervalHours, req.Recurring); err != nil {
 			log.Println("updateChore:", err)
 			writeError(w, http.StatusInternalServerError, "failed to update chore")
 			return
