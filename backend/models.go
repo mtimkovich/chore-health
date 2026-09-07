@@ -28,7 +28,19 @@ type ChoreView struct {
 }
 
 func toView(c Chore) ChoreView {
-	elapsed := time.Since(c.LastCompletedAt).Hours()
+	// A recurring chore's countdown starts fresh at the local midnight after
+	// it was completed, not at the exact moment it was marked done - it's
+	// already off the active list until then (see isCompletedNow), so it
+	// should reappear with its full interval intact rather than however much
+	// had already ticked away since the actual click. A chore that's never
+	// been completed counts down from creation as always; this only applies
+	// to an actual reset.
+	countdownStart := c.LastCompletedAt
+	if c.Recurring && hasBeenCompleted(c) {
+		countdownStart = startOfNextLocalDay(c.LastCompletedAt)
+	}
+
+	elapsed := time.Since(countdownStart).Hours()
 	hoursLeft := c.IntervalHours - elapsed
 
 	percent := 0.0
@@ -63,6 +75,13 @@ func sameLocalDay(a, b time.Time) bool {
 	y1, m1, d1 := a.Date()
 	y2, m2, d2 := b.Date()
 	return y1 == y2 && m1 == m2 && d1 == d2
+}
+
+// startOfNextLocalDay returns local midnight for the calendar day after t.
+func startOfNextLocalDay(t time.Time) time.Time {
+	t = t.Local()
+	y, m, d := t.Date()
+	return time.Date(y, m, d+1, 0, 0, 0, 0, t.Location())
 }
 
 // isCompletedNow reports whether a chore currently belongs on the Completed
