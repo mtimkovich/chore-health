@@ -169,6 +169,38 @@ func handleCompleteChore(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+// handleUndoComplete reverses the most recent handleCompleteChore call,
+// e.g. for an accidental tap on Done from the Completed tab.
+func handleUndoComplete(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid chore id")
+			return
+		}
+
+		if err := undoComplete(db, id); err != nil {
+			if errors.Is(err, errNothingToUndo) {
+				writeError(w, http.StatusBadRequest, "nothing to undo")
+				return
+			}
+			log.Println("undoComplete:", err)
+			writeError(w, http.StatusInternalServerError, "failed to undo")
+			return
+		}
+
+		c, err := getChore(db, id)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "chore not found")
+			return
+		} else if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to load chore")
+			return
+		}
+		writeJSON(w, http.StatusOK, toView(c))
+	}
+}
+
 func handleDeleteChore(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)

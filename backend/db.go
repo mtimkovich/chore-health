@@ -20,23 +20,29 @@ func openDB(path string) (*sql.DB, error) {
 
 	const schema = `
 	CREATE TABLE IF NOT EXISTS chores (
-		id                 INTEGER PRIMARY KEY AUTOINCREMENT,
-		name               TEXT NOT NULL,
-		description        TEXT NOT NULL DEFAULT '',
-		interval_hours     REAL NOT NULL,
-		recurring          INTEGER NOT NULL DEFAULT 1,
-		last_completed_at  DATETIME NOT NULL,
-		created_at         DATETIME NOT NULL
+		id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+		name                   TEXT NOT NULL,
+		description            TEXT NOT NULL DEFAULT '',
+		interval_hours         REAL NOT NULL,
+		recurring              INTEGER NOT NULL DEFAULT 1,
+		last_completed_at      DATETIME NOT NULL,
+		previous_completed_at  DATETIME,
+		created_at             DATETIME NOT NULL
 	);`
 	if _, err := db.Exec(schema); err != nil {
 		return nil, err
 	}
 
-	// Databases created before the description column existed need it added
+	// Databases created before these columns existed need them added
 	// separately; CREATE TABLE IF NOT EXISTS is a no-op for them.
-	if _, err := db.Exec(`ALTER TABLE chores ADD COLUMN description TEXT NOT NULL DEFAULT ''`); err != nil {
-		if !strings.Contains(err.Error(), "duplicate column name") {
-			return nil, err
+	for _, migration := range []string{
+		`ALTER TABLE chores ADD COLUMN description TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE chores ADD COLUMN previous_completed_at DATETIME`,
+	} {
+		if _, err := db.Exec(migration); err != nil {
+			if !strings.Contains(err.Error(), "duplicate column name") {
+				return nil, err
+			}
 		}
 	}
 
@@ -71,8 +77,18 @@ func setSetting(db *sql.DB, key, value string) error {
 	return err
 }
 
+const choreColumns = `id, name, description, interval_hours, recurring, last_completed_at, previous_completed_at, created_at`
+
+func scanChore(row interface{ Scan(...any) error }) (Chore, error) {
+	var c Chore
+	var recurring int
+	err := row.Scan(&c.ID, &c.Name, &c.Description, &c.IntervalHours, &recurring, &c.LastCompletedAt, &c.PreviousCompletedAt, &c.CreatedAt)
+	c.Recurring = recurring != 0
+	return c, err
+}
+
 func listChores(db *sql.DB) ([]Chore, error) {
-	rows, err := db.Query(`SELECT id, name, description, interval_hours, recurring, last_completed_at, created_at FROM chores`)
+	rows, err := db.Query(`SELECT ` + choreColumns + ` FROM chores`)
 	if err != nil {
 		return nil, err
 	}
@@ -80,24 +96,18 @@ func listChores(db *sql.DB) ([]Chore, error) {
 
 	var out []Chore
 	for rows.Next() {
-		var c Chore
-		var recurring int
-		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.IntervalHours, &recurring, &c.LastCompletedAt, &c.CreatedAt); err != nil {
+		c, err := scanChore(rows)
+		if err != nil {
 			return nil, err
 		}
-		c.Recurring = recurring != 0
 		out = append(out, c)
 	}
 	return out, rows.Err()
 }
 
 func getChore(db *sql.DB, id int64) (Chore, error) {
-	var c Chore
-	var recurring int
-	err := db.QueryRow(`SELECT id, name, description, interval_hours, recurring, last_completed_at, created_at FROM chores WHERE id = ?`, id).
-		Scan(&c.ID, &c.Name, &c.Description, &c.IntervalHours, &recurring, &c.LastCompletedAt, &c.CreatedAt)
-	c.Recurring = recurring != 0
-	return c, err
+	row := db.QueryRow(`SELECT `+choreColumns+` FROM chores WHERE id = ?`, id)
+	return scanChore(row)
 }
 
 func createChore(db *sql.DB, name, description string, intervalHours float64, recurring bool) (Chore, error) {
@@ -124,9 +134,38 @@ func updateChore(db *sql.DB, id int64, name, description string, intervalHours f
 	return err
 }
 
+// completeChore stamps last_completed_at with now, saving whatever it was
+// into previous_completed_at first so a single undoComplete can reverse it.
 func completeChore(db *sql.DB, id int64) error {
-	_, err := db.Exec(`UPDATE chores SET last_completed_at = ? WHERE id = ?`, time.Now().UTC(), id)
+	_, err := db.Exec(
+		`UPDATE chores SET previous_completed_at = last_completed_at, last_completed_at = ? WHERE id = ?`,
+		time.Now().UTC(), id,
+	)
 	return err
+}
+
+var errNothingToUndo = errors.New("nothing to undo")
+
+// undoComplete reverses the most recent completeChore call by restoring
+// last_completed_at from previous_completed_at. Only one level of undo is
+// kept - undoing twice in a row without completing in between does nothing.
+func undoComplete(db *sql.DB, id int64) error {
+	res, err := db.Exec(
+		`UPDATE chores SET last_completed_at = previous_completed_at, previous_completed_at = NULL
+		 WHERE id = ? AND previous_completed_at IS NOT NULL`,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return errNothingToUndo
+	}
+	return nil
 }
 
 func deleteChore(db *sql.DB, id int64) error {

@@ -1,17 +1,21 @@
 package main
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 // Chore is a task tracked on a recurring or one-off countdown, mirroring
 // how a Roomba tracks remaining hours on a replaceable part.
 type Chore struct {
-	ID              int64     `json:"id"`
-	Name            string    `json:"name"`
-	Description     string    `json:"description"`
-	IntervalHours   float64   `json:"interval_hours"`
-	Recurring       bool      `json:"recurring"`
-	LastCompletedAt time.Time `json:"last_completed_at"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID                  int64        `json:"id"`
+	Name                string       `json:"name"`
+	Description         string       `json:"description"`
+	IntervalHours       float64      `json:"interval_hours"`
+	Recurring           bool         `json:"recurring"`
+	LastCompletedAt     time.Time    `json:"last_completed_at"`
+	PreviousCompletedAt sql.NullTime `json:"-"`
+	CreatedAt           time.Time    `json:"created_at"`
 }
 
 // ChoreView adds the derived, time-based fields the UI renders directly.
@@ -20,6 +24,7 @@ type ChoreView struct {
 	HoursLeft        float64 `json:"hours_left"`
 	PercentRemaining float64 `json:"percent_remaining"`
 	Overdue          bool    `json:"overdue"`
+	CanUndo          bool    `json:"can_undo"`
 }
 
 func toView(c Chore) ChoreView {
@@ -42,6 +47,7 @@ func toView(c Chore) ChoreView {
 		HoursLeft:        hoursLeft,
 		PercentRemaining: percent,
 		Overdue:          hoursLeft <= 0,
+		CanUndo:          c.PreviousCompletedAt.Valid,
 	}
 }
 

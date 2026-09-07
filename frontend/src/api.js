@@ -40,6 +40,10 @@ export function completeChore(id) {
   return fetch(`${BASE}/${id}/complete`, { method: 'POST' }).then(handle)
 }
 
+export function undoComplete(id) {
+  return fetch(`${BASE}/${id}/undo`, { method: 'POST' }).then(handle)
+}
+
 export function deleteChore(id) {
   return fetch(`${BASE}/${id}`, { method: 'DELETE' }).then(handle)
 }

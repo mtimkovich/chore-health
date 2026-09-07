@@ -6,7 +6,7 @@ const props = defineProps({
   chore: { type: Object, required: true },
   completed: { type: Boolean, default: false },
 })
-const emit = defineEmits(['complete', 'edit', 'delete'])
+const emit = defineEmits(['complete', 'undo', 'edit', 'delete'])
 
 const open = ref(false)
 const confirmingDelete = ref(false)
@@ -74,6 +74,7 @@ function toggleOpen() {
 
     <div v-if="open && !confirmingDelete" class="card-actions">
       <button v-if="!completed" class="btn-complete" @click="emit('complete', chore)">Done</button>
+      <button v-if="completed && chore.can_undo" class="btn-complete" @click="emit('undo', chore)">Undo</button>
       <button class="btn-delete" @click="confirmingDelete = true">Delete</button>
       <button class="btn-edit" @click="emit('edit', chore)">Edit</button>
     </div>

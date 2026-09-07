@@ -73,6 +73,11 @@ async function handleDelete(chore) {
   await refresh()
 }
 
+async function handleUndo(chore) {
+  await api.undoComplete(chore.id)
+  await refresh()
+}
+
 async function handleLoginSuccess() {
   authenticated.value = true
   await refresh()
@@ -155,6 +160,7 @@ onUnmounted(() => clearInterval(refreshTimer))
           :key="chore.id"
           :chore="chore"
           completed
+          @undo="handleUndo"
           @delete="handleDelete"
           @edit="openEdit"
         />
