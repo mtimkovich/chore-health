@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Chore Health</title>
+    <script>
+      // Applied synchronously, before anything paints, so there's no flash
+      // of the wrong theme on load.
+      (function () {
+        // A previous version of this app stored the preference in a cookie
+        // instead - clear it so it doesn't linger as dead, confusing state.
+        document.cookie = 'theme=; path=/; max-age=0'
+        try {
+          if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark')
+          }
+        } catch (e) {}
+      })()
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

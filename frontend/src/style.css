@@ -9,6 +9,29 @@
   --yellow: #f0ad2e;
   --red: #e0432c;
   --accent: #2b4ce0;
+  --red-soft: #fbeceb;
+  --accent-soft: #eef0fb;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #16171a;
+  --card: #222327;
+  --text: #eceded;
+  --muted: #9a9ba6;
+  --track: #34353b;
+  --green: #52b856;
+  --yellow: #f0ad2e;
+  --red: #ef5350;
+  --accent: #5b7cf0;
+  --red-soft: #3a2222;
+  --accent-soft: #1f2740;
+}
+
+:root[data-theme='dark'] .card,
+:root[data-theme='dark'] .login-card {
+  box-shadow: none;
+  border: 1px solid var(--track);
 }
 
 * {
@@ -40,6 +63,12 @@ body {
 .header h1 {
   font-size: 28px;
   margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .icon-btn {
@@ -230,12 +259,12 @@ body {
 }
 
 .btn-delete {
-  background: #fbeceb;
+  background: var(--red-soft);
   color: var(--red);
 }
 
 .btn-edit {
-  background: #eef0fb;
+  background: var(--accent-soft);
   color: var(--accent);
 }
 
@@ -296,7 +325,7 @@ body {
 }
 
 .modal {
-  background: #fff;
+  background: var(--card);
   width: 100%;
   max-width: 480px;
   border-radius: 20px 20px 0 0;
@@ -365,7 +394,7 @@ body {
 .unit-toggle button {
   flex: 1;
   border: 1px solid var(--track);
-  background: #fff;
+  background: var(--card);
   color: var(--text);
   border-radius: 10px;
   padding: 10px 0;

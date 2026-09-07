@@ -4,10 +4,19 @@ import ChoreCard from './components/ChoreCard.vue'
 import ChoreFormModal from './components/ChoreFormModal.vue'
 import LoginScreen from './components/LoginScreen.vue'
 import * as api from './api'
+import { getTheme, setTheme } from './theme'
 
 const authChecked = ref(false)
 const passwordSet = ref(false)
 const authenticated = ref(true)
+
+const theme = ref(getTheme())
+
+function toggleTheme() {
+  const next = theme.value === 'dark' ? 'light' : 'dark'
+  setTheme(next)
+  theme.value = next
+}
 
 const tab = ref('active')
 const chores = ref([])
@@ -105,17 +114,43 @@ onUnmounted(() => clearInterval(refreshTimer))
   <template v-else>
     <div class="header">
       <h1>Chore Health</h1>
-      <button v-if="passwordSet" class="icon-btn" aria-label="Log out" @click="handleLogout">
-        <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-          <path
-            d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </button>
+      <div class="header-actions">
+        <button
+          class="icon-btn"
+          :aria-label="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+          @click="toggleTheme"
+        >
+          <svg v-if="theme === 'dark'" viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2" />
+            <path
+              d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <path
+              d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <button v-if="passwordSet" class="icon-btn" aria-label="Log out" @click="handleLogout">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
+            <path
+              d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div class="tabs">
