@@ -7,7 +7,11 @@ import (
 )
 
 func main() {
-	db, err := openDB("chores.db")
+	dbPath := os.Getenv("CHORE_TIMER_DB_PATH")
+	if dbPath == "" {
+		dbPath = "chores.db"
+	}
+	db, err := openDB(dbPath)
 	if err != nil {
 		log.Fatalf("failed to open database: %v", err)
 	}
@@ -36,6 +40,11 @@ func main() {
 	mux.HandleFunc("GET /api/auth/status", handleAuthStatus(db, sessions))
 	mux.HandleFunc("POST /api/auth/login", handleLogin(db, sessions))
 	mux.HandleFunc("POST /api/auth/logout", handleLogout(sessions))
+
+	// Only populated by the Docker build (see static/.gitkeep); in local dev
+	// this serves nothing because Vite handles the frontend directly and
+	// nothing ever routes here.
+	mux.Handle("/", http.FileServer(http.FS(staticFS())))
 
 	addr := ":8080"
 	log.Printf("chore-timer backend listening on %s", addr)

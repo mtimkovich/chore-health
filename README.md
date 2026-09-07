@@ -35,6 +35,25 @@ backend on `http://localhost:8080` — open the frontend URL in a browser.
 To run them separately instead: `npm run dev:backend` / `npm run dev:frontend`,
 or `cd backend && go run .` / `cd frontend && npm run dev`.
 
+### Docker
+
+```bash
+docker build -t chore-timer .
+docker run -d -p 8080:8080 -v chore-timer-data:/data --name chore-timer chore-timer
+```
+
+Open `http://localhost:8080` — one container serves both the API and the
+built frontend (the Go binary embeds it at build time). `chores.db` lives at
+`/data/chores.db` inside the named volume, so it survives container
+restarts/recreates; drop the `-v` flag if you don't want that.
+
+Useful env vars (see `docker run -e NAME=value ...`):
+
+- `CHORE_TIMER_PASSWORD` — see [Password protection](#password-protection) below.
+- `TZ` (e.g. `TZ=America/New_York`) — containers default to UTC, and this app's
+  "back at local midnight" logic (see [Model](#model)) needs the real
+  timezone to mean anything.
+
 ## Model
 
 Each chore has a name, an `interval_hours` (how long it's allowed to go between
@@ -65,6 +84,15 @@ it's not exposed to the frontend at all); instead:
 
   ```bash
   sqlite3 backend/chores.db "INSERT INTO settings (key, value) VALUES ('password', 'yourpassword') ON CONFLICT(key) DO UPDATE SET value = excluded.value;"
+  ```
+
+  Under Docker, the DB isn't on the host filesystem — reach it through the
+  container instead (`sqlite3` doesn't need to be installed in the image;
+  `docker run --rm` grabs it from a throwaway one):
+
+  ```bash
+  docker run --rm -it -v chore-timer-data:/data keinos/sqlite3 sqlite3 /data/chores.db \
+    "INSERT INTO settings (key, value) VALUES ('password', 'yourpassword') ON CONFLICT(key) DO UPDATE SET value = excluded.value;"
   ```
 
   Clear it the same way with `DELETE FROM settings WHERE key = 'password';`.

@@ -1,0 +1,4 @@
+This directory is empty in the repo. The Docker build copies the built
+frontend (frontend/dist) here before compiling, and //go:embed static in
+static.go bakes it into the binary. Locally (npm run dev), it stays empty -
+Vite serves the frontend directly, so the Go server never needs to.

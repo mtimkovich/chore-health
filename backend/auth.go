@@ -85,12 +85,15 @@ func requestAuthenticated(r *http.Request, sessions *sessionStore) bool {
 	return sessions.valid(cookie.Value)
 }
 
-// requireAuth gates every route except /api/auth/* behind the stored
-// password. If no password has ever been set, this is a no-op and the app
-// behaves exactly as it did before auth existed.
+// requireAuth gates only /api/chores* behind the stored password - not
+// /api/auth/* (that's the login flow itself) and not the static frontend
+// (its JS is what renders the login screen in the first place, so it can't
+// be behind the same gate it's presenting). If no password has ever been
+// set, this is a no-op and the app behaves exactly as it did before auth
+// existed.
 func requireAuth(db *sql.DB, sessions *sessionStore, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/auth/") {
+		if !strings.HasPrefix(r.URL.Path, "/api/chores") {
 			next.ServeHTTP(w, r)
 			return
 		}
