@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import * as api from '../api'
 
 const props = defineProps({
   chore: { type: Object, default: null },
@@ -19,6 +20,7 @@ const amount = ref(
 )
 const recurring = ref(props.chore ? props.chore.recurring : false)
 const error = ref('')
+const submitting = ref(false)
 
 function setUnit(newUnit) {
   if (unit.value === newUnit) return
@@ -26,7 +28,9 @@ function setUnit(newUnit) {
   amount.value = newUnit === 'days' ? 7 : 24
 }
 
-function submit() {
+async function submit() {
+  if (submitting.value) return
+
   const intervalHours = unit.value === 'days' ? Number(amount.value) * 24 : Number(amount.value)
   if (!name.value.trim()) {
     error.value = 'Give the chore a name.'
@@ -36,12 +40,28 @@ function submit() {
     error.value = 'Set how much time is allowed before it is due.'
     return
   }
-  emit('submit', {
+
+  const payload = {
     name: name.value.trim(),
     description: description.value.trim(),
     intervalHours,
     recurring: recurring.value,
-  })
+  }
+
+  error.value = ''
+  submitting.value = true
+  try {
+    if (isEdit) {
+      await api.updateChore(props.chore.id, payload)
+    } else {
+      await api.createChore(payload)
+    }
+    emit('submit')
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -86,7 +106,9 @@ function submit() {
 
       <div class="modal-actions">
         <button class="btn-secondary" @click="emit('cancel')">Cancel</button>
-        <button class="btn-primary" @click="submit">{{ isEdit ? 'Save' : 'Add' }}</button>
+        <button class="btn-primary" :disabled="submitting" @click="submit">
+          {{ submitting ? 'Saving…' : isEdit ? 'Save' : 'Add' }}
+        </button>
       </div>
     </div>
   </div>

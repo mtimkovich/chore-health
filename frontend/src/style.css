@@ -436,6 +436,11 @@ body {
   color: #fff;
 }
 
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .btn-secondary {
   background: var(--track);
   color: var(--text);
@@ -494,9 +499,4 @@ body {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.login-card .btn-primary:disabled {
-  opacity: 0.6;
-  cursor: default;
 }

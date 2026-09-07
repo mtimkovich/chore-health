@@ -61,30 +61,39 @@ function openEdit(chore) {
   showForm.value = true
 }
 
-async function handleSubmit(payload) {
-  if (editingChore.value) {
-    await api.updateChore(editingChore.value.id, payload)
-  } else {
-    await api.createChore(payload)
-  }
+// ChoreFormModal makes the create/update API call itself and only emits
+// this once that actually succeeded, so there's nothing to catch here.
+async function handleSubmit() {
   showForm.value = false
   editingChore.value = null
   await refresh()
 }
 
 async function handleComplete(chore) {
-  await api.completeChore(chore.id)
-  await refresh()
+  try {
+    await api.completeChore(chore.id)
+    await refresh()
+  } catch (e) {
+    loadError.value = e.message
+  }
 }
 
 async function handleDelete(chore) {
-  await api.deleteChore(chore.id)
-  await refresh()
+  try {
+    await api.deleteChore(chore.id)
+    await refresh()
+  } catch (e) {
+    loadError.value = e.message
+  }
 }
 
 async function handleUndo(chore) {
-  await api.undoComplete(chore.id)
-  await refresh()
+  try {
+    await api.undoComplete(chore.id)
+    await refresh()
+  } catch (e) {
+    loadError.value = e.message
+  }
 }
 
 async function handleLoginSuccess() {
@@ -93,7 +102,12 @@ async function handleLoginSuccess() {
 }
 
 async function handleLogout() {
-  await api.logout()
+  try {
+    await api.logout()
+  } catch (e) {
+    loadError.value = e.message
+    return
+  }
   authenticated.value = false
 }
 
