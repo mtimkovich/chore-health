@@ -1,0 +1,12 @@
+services:
+  chore-health:
+    build: .
+    image: chore-health
+    container_name: chore-health
+    restart: unless-stopped
+    ports:
+      - "5001:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - CHORE_HEALTH_PASSWORD=admin

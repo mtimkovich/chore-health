@@ -42,10 +42,30 @@ docker build -t chore-health .
 docker run -d -p 8080:8080 -v chore-health-data:/data --name chore-health chore-health
 ```
 
+Or with `docker-compose.yml` (bind-mounts `./data` instead of a named
+volume, and builds the image itself):
+
+```bash
+docker compose up -d --build
+```
+
 Open `http://localhost:8080` — one container serves both the API and the
 built frontend (the Go binary embeds it at build time). `chores.db` lives at
-`/data/chores.db` inside the named volume, so it survives container
-restarts/recreates; drop the `-v` flag if you don't want that.
+`/data/chores.db`, backed by whichever of the above you used, so it survives
+container restarts/recreates.
+
+The container runs as a non-root user (fixed UID/GID `10001`, set in the
+Dockerfile). A **named volume** (`-v chore-health-data:/data`) is initialized
+from the image, so this just works. A **host bind mount** (`-v ./data:/data`,
+including the compose file above) is not - Docker mounts the host path as-is,
+ownership and all, so `./data` needs to actually be owned by `10001` or the
+container can't write to it (SQLite fails with "attempt to write a readonly
+database"). Fix it once, before first starting the container:
+
+```bash
+mkdir -p data
+sudo chown -R 10001:10001 data
+```
 
 Useful env vars (see `docker run -e NAME=value ...`):
 

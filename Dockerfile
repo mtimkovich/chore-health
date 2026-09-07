@@ -25,8 +25,17 @@ FROM alpine:3.20
 # tzdata lets time.Local resolve a named zone from the TZ env var, so
 # "local midnight" (recurring chores reappearing after being marked done)
 # matches the operator's actual timezone instead of defaulting to UTC.
+#
+# The chore-health user/group get a fixed UID/GID (rather than whatever
+# addgroup/adduser would pick next) so it's documented and stable across
+# rebuilds: a bind-mounted host directory (e.g. docker-compose's ./data)
+# is owned by whatever's on the host, not by this image's chown below - that
+# only applies to a Docker-managed volume or the container's own layer. To
+# let this non-root user write into a host directory, chown it to match:
+#   sudo chown -R 10001:10001 ./data
 RUN apk add --no-cache tzdata && \
-    addgroup -S chore-health && adduser -S chore-health -G chore-health && \
+    addgroup -g 10001 -S chore-health && \
+    adduser -u 10001 -S chore-health -G chore-health && \
     mkdir -p /data && chown chore-health:chore-health /data
 
 WORKDIR /app
