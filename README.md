@@ -1,4 +1,4 @@
-# Chore Timer
+# Chore Health
 
 Tracks chores as countdowns, styled after the Roomba "Product Health" screen — each
 chore is a card with a draining progress bar and an "~N HRS LEFT" readout, sorted so
@@ -38,8 +38,8 @@ or `cd backend && go run .` / `cd frontend && npm run dev`.
 ### Docker
 
 ```bash
-docker build -t chore-timer .
-docker run -d -p 8080:8080 -v chore-timer-data:/data --name chore-timer chore-timer
+docker build -t chore-health .
+docker run -d -p 8080:8080 -v chore-health-data:/data --name chore-health chore-health
 ```
 
 Open `http://localhost:8080` — one container serves both the API and the
@@ -49,7 +49,7 @@ restarts/recreates; drop the `-v` flag if you don't want that.
 
 Useful env vars (see `docker run -e NAME=value ...`):
 
-- `CHORE_TIMER_PASSWORD` — see [Password protection](#password-protection) below.
+- `CHORE_HEALTH_PASSWORD` — see [Password protection](#password-protection) below.
 - `TZ` (e.g. `TZ=America/New_York`) — containers default to UTC, and this app's
   "back at local midnight" logic (see [Model](#model)) needs the real
   timezone to mean anything.
@@ -76,7 +76,7 @@ Optional, and off by default — with no password set, the app works exactly as
 if this feature didn't exist. There's no in-app way to set one (by design -
 it's not exposed to the frontend at all); instead:
 
-- **Env var**: set `CHORE_TIMER_PASSWORD` before starting the backend. It's
+- **Env var**: set `CHORE_HEALTH_PASSWORD` before starting the backend. It's
   applied to the database on every startup, so it always wins over whatever
   is in the database.
 - **Directly in the database**: with the backend stopped (or at least not
@@ -91,7 +91,7 @@ it's not exposed to the frontend at all); instead:
   `docker run --rm` grabs it from a throwaway one):
 
   ```bash
-  docker run --rm -it -v chore-timer-data:/data keinos/sqlite3 sqlite3 /data/chores.db \
+  docker run --rm -it -v chore-health-data:/data keinos/sqlite3 sqlite3 /data/chores.db \
     "INSERT INTO settings (key, value) VALUES ('password', 'yourpassword') ON CONFLICT(key) DO UPDATE SET value = excluded.value;"
   ```
 

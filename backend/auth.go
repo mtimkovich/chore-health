@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const sessionCookieName = "chore_timer_session"
+const sessionCookieName = "chore_health_session"
 
 // sessionStore tracks logged-in sessions in memory. That's plenty for a
 // single-user app on a local network: no persistence needed, and a server

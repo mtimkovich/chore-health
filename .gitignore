@@ -1,6 +1,6 @@
 backend/chores.db
-backend/chore-timer.exe
-backend/chore-timer
+backend/chore-health.exe
+backend/chore-health
 node_modules/
 frontend/dist/
 *.log

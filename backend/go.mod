@@ -1,4 +1,4 @@
-module chore-timer
+module chore-health
 
 go 1.25
 

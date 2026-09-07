@@ -17,7 +17,7 @@ COPY backend/ ./
 # Overwrite the empty static/ placeholder (see static/.gitkeep) with the
 # real build, then embed it into the binary via //go:embed in static.go.
 COPY --from=frontend-builder /app/frontend/dist ./static
-RUN CGO_ENABLED=0 go build -o /chore-timer .
+RUN CGO_ENABLED=0 go build -o /chore-health .
 
 # ---- Final image ----
 FROM alpine:3.20
@@ -26,15 +26,15 @@ FROM alpine:3.20
 # "local midnight" (recurring chores reappearing after being marked done)
 # matches the operator's actual timezone instead of defaulting to UTC.
 RUN apk add --no-cache tzdata && \
-    addgroup -S chore-timer && adduser -S chore-timer -G chore-timer && \
-    mkdir -p /data && chown chore-timer:chore-timer /data
+    addgroup -S chore-health && adduser -S chore-health -G chore-health && \
+    mkdir -p /data && chown chore-health:chore-health /data
 
 WORKDIR /app
-COPY --from=backend-builder /chore-timer ./chore-timer
+COPY --from=backend-builder /chore-health ./chore-health
 
-ENV CHORE_TIMER_DB_PATH=/data/chores.db
+ENV CHORE_HEALTH_DB_PATH=/data/chores.db
 VOLUME ["/data"]
 EXPOSE 8080
 
-USER chore-timer
-ENTRYPOINT ["./chore-timer"]
+USER chore-health
+ENTRYPOINT ["./chore-health"]

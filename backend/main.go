@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	dbPath := os.Getenv("CHORE_TIMER_DB_PATH")
+	dbPath := os.Getenv("CHORE_HEALTH_DB_PATH")
 	if dbPath == "" {
 		dbPath = "chores.db"
 	}
@@ -20,9 +20,9 @@ func main() {
 	// An env var always wins on startup, so it doubles as a way to force a
 	// known password (e.g. from a launch script) regardless of whatever was
 	// last set through the app.
-	if pw := os.Getenv("CHORE_TIMER_PASSWORD"); pw != "" {
+	if pw := os.Getenv("CHORE_HEALTH_PASSWORD"); pw != "" {
 		if err := setSetting(db, "password", pw); err != nil {
-			log.Fatalf("failed to apply CHORE_TIMER_PASSWORD: %v", err)
+			log.Fatalf("failed to apply CHORE_HEALTH_PASSWORD: %v", err)
 		}
 	}
 
@@ -47,6 +47,6 @@ func main() {
 	mux.Handle("/", http.FileServer(http.FS(staticFS())))
 
 	addr := ":8080"
-	log.Printf("chore-timer backend listening on %s", addr)
+	log.Printf("chore-health backend listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, requireAuth(db, sessions, mux)))
 }
