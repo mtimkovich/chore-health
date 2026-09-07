@@ -9,8 +9,6 @@
   --yellow: #f0ad2e;
   --red: #e0432c;
   --accent: #2b4ce0;
-  --red-soft: #fbeceb;
-  --accent-soft: #eef0fb;
 }
 
 :root[data-theme='dark'] {
@@ -24,8 +22,6 @@
   --yellow: #f0ad2e;
   --red: #ef5350;
   --accent: #5b7cf0;
-  --red-soft: #3a2222;
-  --accent-soft: #1f2740;
 }
 
 :root[data-theme='dark'] .card,
@@ -259,13 +255,13 @@ body {
 }
 
 .btn-delete {
-  background: var(--red-soft);
+  background: var(--track);
   color: var(--red);
 }
 
 .btn-edit {
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--track);
+  color: var(--text);
 }
 
 .confirm-row {

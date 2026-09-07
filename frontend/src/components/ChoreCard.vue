@@ -23,6 +23,18 @@ const statusText = computed(() => {
   return props.chore.overdue ? `OVERDUE BY ${label}` : `~ ${label} LEFT`
 })
 
+const expiresAtLabel = computed(() => {
+  const expiresAt = new Date(Date.now() + props.chore.hours_left * 3_600_000)
+  const formatted = expiresAt.toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+  return props.chore.overdue ? `Was due ${formatted}` : `Due ${formatted}`
+})
+
 const completedText = computed(() => {
   const hoursAgo = (Date.now() - new Date(props.chore.last_completed_at).getTime()) / 3_600_000
   if (hoursAgo < 1) return 'COMPLETED JUST NOW'
@@ -66,7 +78,7 @@ function toggleOpen() {
           :style="{ width: chore.percent_remaining + '%' }"
         ></div>
       </div>
-      <div class="status-line" :class="{ overdue: chore.overdue }">{{ statusText }}</div>
+      <div class="status-line" :class="{ overdue: chore.overdue }" :title="expiresAtLabel">{{ statusText }}</div>
     </template>
     <div v-else class="status-line completed-line">{{ completedText }}</div>
 
@@ -76,7 +88,7 @@ function toggleOpen() {
       <button v-if="!completed" class="btn-complete" @click="emit('complete', chore)">Done</button>
       <button v-if="completed && chore.can_undo" class="btn-complete" @click="emit('undo', chore)">Undo</button>
       <button class="btn-delete" @click="confirmingDelete = true">Delete</button>
-      <button class="btn-edit" @click="emit('edit', chore)">Edit</button>
+      <button v-if="!completed || chore.recurring" class="btn-edit" @click="emit('edit', chore)">Edit</button>
     </div>
 
     <div v-if="open && confirmingDelete" class="confirm-row">

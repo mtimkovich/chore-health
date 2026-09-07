@@ -7,15 +7,27 @@ import (
 
 // Chore is a task tracked on a recurring or one-off countdown, mirroring
 // how a Roomba tracks remaining hours on a replaceable part.
+//
+// LastCompletedAt and CountdownStartedAt look redundant but answer different
+// questions. LastCompletedAt is purely "when was Done last clicked" - it
+// drives isCompletedNow (the Completed-tab hide-until-midnight/24h window)
+// and the "COMPLETED X AGO" label, and nothing else ever touches it.
+// CountdownStartedAt is "what point in time is the interval measured from"
+// - it's what toView actually uses for hours_left/percent, and unlike
+// LastCompletedAt it also gets rebased by editing the chore (see
+// updateChore). Keeping them separate means editing a chore's duration can
+// never be mistaken for a fresh Done click.
 type Chore struct {
-	ID                  int64        `json:"id"`
-	Name                string       `json:"name"`
-	Description         string       `json:"description"`
-	IntervalHours       float64      `json:"interval_hours"`
-	Recurring           bool         `json:"recurring"`
-	LastCompletedAt     time.Time    `json:"last_completed_at"`
-	PreviousCompletedAt sql.NullTime `json:"-"`
-	CreatedAt           time.Time    `json:"created_at"`
+	ID                         int64        `json:"id"`
+	Name                       string       `json:"name"`
+	Description                string       `json:"description"`
+	IntervalHours              float64      `json:"interval_hours"`
+	Recurring                  bool         `json:"recurring"`
+	LastCompletedAt            time.Time    `json:"last_completed_at"`
+	PreviousCompletedAt        sql.NullTime `json:"-"`
+	CountdownStartedAt         time.Time    `json:"-"`
+	PreviousCountdownStartedAt sql.NullTime `json:"-"`
+	CreatedAt                  time.Time    `json:"created_at"`
 }
 
 // ChoreView adds the derived, time-based fields the UI renders directly.
@@ -28,19 +40,7 @@ type ChoreView struct {
 }
 
 func toView(c Chore) ChoreView {
-	// A recurring chore's countdown starts fresh at the local midnight after
-	// it was completed, not at the exact moment it was marked done - it's
-	// already off the active list until then (see isCompletedNow), so it
-	// should reappear with its full interval intact rather than however much
-	// had already ticked away since the actual click. A chore that's never
-	// been completed counts down from creation as always; this only applies
-	// to an actual reset.
-	countdownStart := c.LastCompletedAt
-	if c.Recurring && hasBeenCompleted(c) {
-		countdownStart = startOfNextLocalDay(c.LastCompletedAt)
-	}
-
-	elapsed := time.Since(countdownStart).Hours()
+	elapsed := time.Since(c.CountdownStartedAt).Hours()
 	hoursLeft := c.IntervalHours - elapsed
 
 	percent := 0.0

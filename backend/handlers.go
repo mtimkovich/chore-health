@@ -122,6 +122,10 @@ func handleUpdateChore(db *sql.DB) http.HandlerFunc {
 		}
 
 		if err := updateChore(db, id, req.Name, req.Description, req.IntervalHours, req.Recurring); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				writeError(w, http.StatusNotFound, "chore not found")
+				return
+			}
 			log.Println("updateChore:", err)
 			writeError(w, http.StatusInternalServerError, "failed to update chore")
 			return
