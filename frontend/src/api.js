@@ -1,9 +1,12 @@
 const BASE = '/api/chores'
+const AUTH_BASE = '/api/auth'
 
 async function handle(res) {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `request failed: ${res.status}`)
+    const err = new Error(body.error || `request failed: ${res.status}`)
+    err.status = res.status
+    throw err
   }
   if (res.status === 204) return null
   return res.json()
@@ -39,4 +42,20 @@ export function completeChore(id) {
 
 export function deleteChore(id) {
   return fetch(`${BASE}/${id}`, { method: 'DELETE' }).then(handle)
+}
+
+export function authStatus() {
+  return fetch(`${AUTH_BASE}/status`).then(handle)
+}
+
+export function login(password) {
+  return fetch(`${AUTH_BASE}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  }).then(handle)
+}
+
+export function logout() {
+  return fetch(`${AUTH_BASE}/logout`, { method: 'POST' }).then(handle)
 }

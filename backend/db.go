@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
@@ -39,7 +40,35 @@ func openDB(path string) (*sql.DB, error) {
 		}
 	}
 
+	const settingsSchema = `
+	CREATE TABLE IF NOT EXISTS settings (
+		key   TEXT PRIMARY KEY,
+		value TEXT NOT NULL
+	);`
+	if _, err := db.Exec(settingsSchema); err != nil {
+		return nil, err
+	}
+
 	return db, nil
+}
+
+// getSetting returns "" if the key has never been set.
+func getSetting(db *sql.DB, key string) (string, error) {
+	var value string
+	err := db.QueryRow(`SELECT value FROM settings WHERE key = ?`, key).Scan(&value)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	return value, err
+}
+
+func setSetting(db *sql.DB, key, value string) error {
+	_, err := db.Exec(
+		`INSERT INTO settings (key, value) VALUES (?, ?)
+		 ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+		key, value,
+	)
+	return err
 }
 
 func listChores(db *sql.DB) ([]Chore, error) {
