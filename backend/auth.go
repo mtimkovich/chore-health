@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"log"
@@ -77,12 +76,12 @@ func clearSessionCookie(w http.ResponseWriter) {
 	})
 }
 
-func requestAuthenticated(r *http.Request, sessions *sessionStore) bool {
+func (a *app) requestAuthenticated(r *http.Request) bool {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
 		return false
 	}
-	return sessions.valid(cookie.Value)
+	return a.sessions.valid(cookie.Value)
 }
 
 // requireAuth gates only /api/chores* behind the stored password - not
@@ -91,20 +90,20 @@ func requestAuthenticated(r *http.Request, sessions *sessionStore) bool {
 // be behind the same gate it's presenting). If no password has ever been
 // set, this is a no-op and the app behaves exactly as it did before auth
 // existed.
-func requireAuth(db *sql.DB, sessions *sessionStore, next http.Handler) http.Handler {
+func (a *app) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(r.URL.Path, "/api/chores") {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		password, err := getSetting(db, "password")
+		password, err := getSetting(a.db, "password")
 		if err != nil {
 			log.Println("getSetting password:", err)
 			writeError(w, http.StatusInternalServerError, "failed to check auth")
 			return
 		}
-		if password == "" || requestAuthenticated(r, sessions) {
+		if password == "" || a.requestAuthenticated(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -113,55 +112,49 @@ func requireAuth(db *sql.DB, sessions *sessionStore, next http.Handler) http.Han
 	})
 }
 
-func handleAuthStatus(db *sql.DB, sessions *sessionStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		password, err := getSetting(db, "password")
-		if err != nil {
-			log.Println("getSetting password:", err)
-			writeError(w, http.StatusInternalServerError, "failed to check auth")
-			return
-		}
-		writeJSON(w, http.StatusOK, map[string]bool{
-			"password_set":  password != "",
-			"authenticated": password == "" || requestAuthenticated(r, sessions),
-		})
+func (a *app) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
+	password, err := getSetting(a.db, "password")
+	if err != nil {
+		log.Println("getSetting password:", err)
+		writeError(w, http.StatusInternalServerError, "failed to check auth")
+		return
 	}
+	writeJSON(w, http.StatusOK, map[string]bool{
+		"password_set":  password != "",
+		"authenticated": password == "" || a.requestAuthenticated(r),
+	})
 }
 
 type loginRequest struct {
 	Password string `json:"password"`
 }
 
-func handleLogin(db *sql.DB, sessions *sessionStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req loginRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, "invalid request body")
-			return
-		}
-
-		password, err := getSetting(db, "password")
-		if err != nil {
-			log.Println("getSetting password:", err)
-			writeError(w, http.StatusInternalServerError, "failed to check auth")
-			return
-		}
-		if password == "" || req.Password != password {
-			writeError(w, http.StatusUnauthorized, "incorrect password")
-			return
-		}
-
-		setSessionCookie(w, sessions.create())
-		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
+	var req loginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
 	}
+
+	password, err := getSetting(a.db, "password")
+	if err != nil {
+		log.Println("getSetting password:", err)
+		writeError(w, http.StatusInternalServerError, "failed to check auth")
+		return
+	}
+	if password == "" || req.Password != password {
+		writeError(w, http.StatusUnauthorized, "incorrect password")
+		return
+	}
+
+	setSessionCookie(w, a.sessions.create())
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
-func handleLogout(sessions *sessionStore) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if cookie, err := r.Cookie(sessionCookieName); err == nil {
-			sessions.revoke(cookie.Value)
-		}
-		clearSessionCookie(w)
-		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+func (a *app) handleLogout(w http.ResponseWriter, r *http.Request) {
+	if cookie, err := r.Cookie(sessionCookieName); err == nil {
+		a.sessions.revoke(cookie.Value)
 	}
+	clearSessionCookie(w)
+	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }

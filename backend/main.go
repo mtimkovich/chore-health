@@ -26,20 +26,20 @@ func main() {
 		}
 	}
 
-	sessions := newSessionStore()
+	a := &app{db: db, sessions: newSessionStore()}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/chores", handleListChores(db))
-	mux.HandleFunc("GET /api/chores/completed", handleListCompletedChores(db))
-	mux.HandleFunc("POST /api/chores", handleCreateChore(db))
-	mux.HandleFunc("PUT /api/chores/{id}", handleUpdateChore(db))
-	mux.HandleFunc("POST /api/chores/{id}/complete", handleCompleteChore(db))
-	mux.HandleFunc("POST /api/chores/{id}/undo", handleUndoComplete(db))
-	mux.HandleFunc("DELETE /api/chores/{id}", handleDeleteChore(db))
+	mux.HandleFunc("GET /api/chores", a.handleListChores)
+	mux.HandleFunc("GET /api/chores/completed", a.handleListCompletedChores)
+	mux.HandleFunc("POST /api/chores", a.handleCreateChore)
+	mux.HandleFunc("PUT /api/chores/{id}", a.handleUpdateChore)
+	mux.HandleFunc("POST /api/chores/{id}/complete", a.handleCompleteChore)
+	mux.HandleFunc("POST /api/chores/{id}/undo", a.handleUndoComplete)
+	mux.HandleFunc("DELETE /api/chores/{id}", a.handleDeleteChore)
 
-	mux.HandleFunc("GET /api/auth/status", handleAuthStatus(db, sessions))
-	mux.HandleFunc("POST /api/auth/login", handleLogin(db, sessions))
-	mux.HandleFunc("POST /api/auth/logout", handleLogout(sessions))
+	mux.HandleFunc("GET /api/auth/status", a.handleAuthStatus)
+	mux.HandleFunc("POST /api/auth/login", a.handleLogin)
+	mux.HandleFunc("POST /api/auth/logout", a.handleLogout)
 
 	// Only populated by the Docker build (see static/.gitkeep); in local dev
 	// this serves nothing because Vite handles the frontend directly and
@@ -48,5 +48,5 @@ func main() {
 
 	addr := ":8080"
 	log.Printf("chore-health backend listening on %s", addr)
-	log.Fatal(http.ListenAndServe(addr, requireAuth(db, sessions, mux)))
+	log.Fatal(http.ListenAndServe(addr, a.requireAuth(mux)))
 }
