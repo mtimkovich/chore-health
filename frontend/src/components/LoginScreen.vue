@@ -27,7 +27,6 @@ async function submit() {
   <div class="login-screen">
     <div class="login-card">
       <h1>Chore Health</h1>
-      <p class="login-subtitle">Enter the password to continue.</p>
       <input
         type="password"
         v-model="password"

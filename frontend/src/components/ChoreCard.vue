@@ -72,7 +72,7 @@ function handleDone() {
     return
   }
   celebrating.value = true
-  setTimeout(() => emit('complete', props.chore), 650)
+  setTimeout(() => emit('complete', props.chore), 1000)
 }
 </script>
 
