@@ -10,6 +10,22 @@ const emit = defineEmits(['complete', 'undo', 'edit', 'delete'])
 
 const open = ref(false)
 const confirmingDelete = ref(false)
+const celebrating = ref(false)
+
+const reduceMotion =
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+// Fixed burst of small pieces flying outward from the checkmark in a circle.
+const confettiPieces = Array.from({ length: 8 }, (_, i) => {
+  const angle = (i / 8) * Math.PI * 2
+  const distance = 30
+  return {
+    dx: `${Math.cos(angle) * distance}px`,
+    dy: `${Math.sin(angle) * distance}px`,
+    delay: `${(i % 4) * 25}ms`,
+    color: ['confetti-green', 'confetti-yellow', 'confetti-accent'][i % 3],
+  }
+})
 
 const barColor = computed(() => {
   if (props.chore.overdue) return 'red'
@@ -45,10 +61,23 @@ function toggleOpen() {
   open.value = !open.value
   confirmingDelete.value = false
 }
+
+// Briefly celebrates before actually completing, so marking something done
+// feels like a small win instead of the card just vanishing. Skipped
+// entirely for anyone who's asked for less motion.
+function handleDone() {
+  if (celebrating.value) return
+  if (reduceMotion) {
+    emit('complete', props.chore)
+    return
+  }
+  celebrating.value = true
+  setTimeout(() => emit('complete', props.chore), 650)
+}
 </script>
 
 <template>
-  <div class="card">
+  <div class="card" :class="{ celebrating }">
     <div class="card-top" @click="toggleOpen">
       <h2>
         {{ chore.name }}
@@ -84,8 +113,22 @@ function toggleOpen() {
 
     <p v-if="open && chore.description" class="chore-description">{{ chore.description }}</p>
 
-    <div v-if="open && !confirmingDelete" class="card-actions">
-      <button v-if="!completed" class="btn-complete" aria-label="Mark done" @click="emit('complete', chore)">
+    <div v-if="celebrating" class="celebrate-banner">
+      <svg class="celebrate-check" viewBox="0 0 24 24" fill="none">
+        <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <span>Nice work!</span>
+      <span
+        v-for="(p, i) in confettiPieces"
+        :key="i"
+        class="confetti-piece"
+        :class="p.color"
+        :style="{ '--dx': p.dx, '--dy': p.dy, animationDelay: p.delay }"
+      ></span>
+    </div>
+
+    <div v-else-if="open && !confirmingDelete" class="card-actions">
+      <button v-if="!completed" class="btn-complete" aria-label="Mark done" @click="handleDone">
         <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
           <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
