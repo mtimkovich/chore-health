@@ -17,16 +17,11 @@ func main() {
 	}
 	defer db.Close()
 
-	// An env var always wins on startup, so it doubles as a way to force a
-	// known password (e.g. from a launch script) regardless of whatever was
-	// last set through the app.
-	if pw := os.Getenv("CHORE_HEALTH_PASSWORD"); pw != "" {
-		if err := setSetting(db, "password", pw); err != nil {
-			log.Fatalf("failed to apply CHORE_HEALTH_PASSWORD: %v", err)
-		}
-	}
-
-	a := &app{db: db, sessions: newSessionStore()}
+	// The password is config, not data: it lives in an env var set outside
+	// the app (e.g. a launch script or docker-compose), never in the
+	// database and never exposed to the frontend to change. Unset means
+	// auth is disabled entirely.
+	a := &app{db: db, sessions: newSessionStore(), password: os.Getenv("CHORE_HEALTH_PASSWORD")}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/chores", a.handleListChores)

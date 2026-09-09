@@ -60,35 +60,7 @@ func openDB(path string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	const settingsSchema = `
-	CREATE TABLE IF NOT EXISTS settings (
-		key   TEXT PRIMARY KEY,
-		value TEXT NOT NULL
-	);`
-	if _, err := db.Exec(settingsSchema); err != nil {
-		return nil, err
-	}
-
 	return db, nil
-}
-
-// getSetting returns "" if the key has never been set.
-func getSetting(db *sql.DB, key string) (string, error) {
-	var value string
-	err := db.QueryRow(`SELECT value FROM settings WHERE key = ?`, key).Scan(&value)
-	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
-	}
-	return value, err
-}
-
-func setSetting(db *sql.DB, key, value string) error {
-	_, err := db.Exec(
-		`INSERT INTO settings (key, value) VALUES (?, ?)
-		 ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-		key, value,
-	)
-	return err
 }
 
 const choreColumns = `id, name, description, interval_hours, recurring, last_completed_at, previous_completed_at, countdown_started_at, previous_countdown_started_at, created_at`
@@ -202,7 +174,7 @@ func completeChore(db *sql.DB, id int64) error {
 
 	now := time.Now().UTC()
 	countdownStart := now
-	if current.Recurring {
+	if isDailyRecurring(current) {
 		countdownStart = startOfNextLocalDay(now)
 	}
 

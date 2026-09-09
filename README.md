@@ -94,31 +94,11 @@ poll `GET /api/chores` (it does this once a minute) to stay current.
 
 Optional, and off by default — with no password set, the app works exactly as
 if this feature didn't exist. There's no in-app way to set one (by design -
-it's not exposed to the frontend at all); instead:
+it's not exposed to the frontend at all): set the `CHORE_HEALTH_PASSWORD` env
+var before starting the backend. It's read once at startup, never persisted
+to the database, and unsetting it (or leaving it unset) disables auth
+entirely.
 
-- **Env var**: set `CHORE_HEALTH_PASSWORD` before starting the backend. It's
-  applied to the database on every startup, so it always wins over whatever
-  is in the database.
-- **Directly in the database**: with the backend stopped (or at least not
-  mid-write), set it with sqlite3:
-
-  ```bash
-  sqlite3 backend/chores.db "INSERT INTO settings (key, value) VALUES ('password', 'yourpassword') ON CONFLICT(key) DO UPDATE SET value = excluded.value;"
-  ```
-
-  Under Docker, the DB isn't on the host filesystem — reach it through the
-  container instead (`sqlite3` doesn't need to be installed in the image;
-  `docker run --rm` grabs it from a throwaway one):
-
-  ```bash
-  docker run --rm -it -v chore-health-data:/data keinos/sqlite3 sqlite3 /data/chores.db \
-    "INSERT INTO settings (key, value) VALUES ('password', 'yourpassword') ON CONFLICT(key) DO UPDATE SET value = excluded.value;"
-  ```
-
-  Clear it the same way with `DELETE FROM settings WHERE key = 'password';`.
-
-Either way it's stored in plaintext in `chores.db` - this is a local-network
-tool, not a public one, so that's an intentional simplification, not an
-oversight. Once a password is set, the app shows a login screen and a logout
-button appears in the header; sessions are an in-memory cookie, so restarting
-the backend logs everyone out.
+Once a password is set, the app shows a login screen and a logout button
+appears in the header; sessions are an in-memory cookie, so restarting the
+backend logs everyone out.

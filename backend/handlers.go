@@ -17,6 +17,7 @@ import (
 type app struct {
 	db       *sql.DB
 	sessions *sessionStore
+	password string
 }
 
 type choreRequest struct {

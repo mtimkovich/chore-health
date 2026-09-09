@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -84,11 +83,11 @@ func (a *app) requestAuthenticated(r *http.Request) bool {
 	return a.sessions.valid(cookie.Value)
 }
 
-// requireAuth gates only /api/chores* behind the stored password - not
+// requireAuth gates only /api/chores* behind the configured password - not
 // /api/auth/* (that's the login flow itself) and not the static frontend
 // (its JS is what renders the login screen in the first place, so it can't
-// be behind the same gate it's presenting). If no password has ever been
-// set, this is a no-op and the app behaves exactly as it did before auth
+// be behind the same gate it's presenting). If no password is configured,
+// this is a no-op and the app behaves exactly as it did before auth
 // existed.
 func (a *app) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -97,13 +96,7 @@ func (a *app) requireAuth(next http.Handler) http.Handler {
 			return
 		}
 
-		password, err := getSetting(a.db, "password")
-		if err != nil {
-			log.Println("getSetting password:", err)
-			writeError(w, http.StatusInternalServerError, "failed to check auth")
-			return
-		}
-		if password == "" || a.requestAuthenticated(r) {
+		if a.password == "" || a.requestAuthenticated(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -113,15 +106,9 @@ func (a *app) requireAuth(next http.Handler) http.Handler {
 }
 
 func (a *app) handleAuthStatus(w http.ResponseWriter, r *http.Request) {
-	password, err := getSetting(a.db, "password")
-	if err != nil {
-		log.Println("getSetting password:", err)
-		writeError(w, http.StatusInternalServerError, "failed to check auth")
-		return
-	}
 	writeJSON(w, http.StatusOK, map[string]bool{
-		"password_set":  password != "",
-		"authenticated": password == "" || a.requestAuthenticated(r),
+		"password_set":  a.password != "",
+		"authenticated": a.password == "" || a.requestAuthenticated(r),
 	})
 }
 
@@ -136,13 +123,7 @@ func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	password, err := getSetting(a.db, "password")
-	if err != nil {
-		log.Println("getSetting password:", err)
-		writeError(w, http.StatusInternalServerError, "failed to check auth")
-		return
-	}
-	if password == "" || req.Password != password {
+	if a.password == "" || req.Password != a.password {
 		writeError(w, http.StatusUnauthorized, "incorrect password")
 		return
 	}
