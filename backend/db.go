@@ -118,14 +118,15 @@ func createChore(db *sql.DB, name, description string, intervalHours float64, re
 }
 
 // updateChore saves the edited fields. If the chore has been completed at
-// least once before, it also rebases countdown_started_at to now, so the
-// interval the user just set is measured "from now" - otherwise it stays
-// anchored to whenever it was last marked done, which goes stale: editing a
-// chore to the same duration it already had would leave its due date
-// completely unchanged, and editing to a different duration would still be
-// measured from the wrong starting point. A chore that's never been
-// completed doesn't have this problem (its countdown already runs from
-// created_at), so it's left alone.
+// least once before AND intervalHours is actually changing, it also rebases
+// countdown_started_at to now, so the new interval is measured "from now" -
+// otherwise it stays anchored to whenever it was last marked done, which
+// goes stale: editing a chore to a different duration would still be
+// measured from the wrong starting point. Editing anything else (name,
+// description, recurring) leaves countdown_started_at alone, since none of
+// that affects hours_left - a rename shouldn't reset the countdown. A chore
+// that's never been completed doesn't have this problem (its countdown
+// already runs from created_at), so it's left alone regardless.
 //
 // This deliberately never touches last_completed_at - only completeChore
 // does that. Rebasing it here too would make isCompletedNow think the chore
@@ -136,7 +137,7 @@ func updateChore(db *sql.DB, id int64, name, description string, intervalHours f
 		return err
 	}
 
-	if hasBeenCompleted(current) {
+	if hasBeenCompleted(current) && intervalHours != current.IntervalHours {
 		countdownStart := time.Now().UTC()
 		if isDailyRecurring(current) && isCompletedNow(current) {
 			// Still hidden on the Completed tab pending midnight - keep the
