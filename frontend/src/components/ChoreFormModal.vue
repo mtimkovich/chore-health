@@ -1,44 +1,44 @@
 <script setup>
-import { ref } from 'vue'
-import * as api from '../api'
+import { ref } from 'vue';
+import * as api from '../api';
 
 const props = defineProps({
   chore: { type: Object, default: null },
-})
-const emit = defineEmits(['submit', 'cancel'])
+});
+const emit = defineEmits(['submit', 'cancel']);
 
-const isEdit = !!props.chore
-const name = ref(props.chore?.name ?? '')
-const description = ref(props.chore?.description ?? '')
+const isEdit = !!props.chore;
+const name = ref(props.chore?.name ?? '');
+const description = ref(props.chore?.description ?? '');
 
 // Editing an existing chore whose interval is a whole number of days starts
 // the form in "days" mode so it round-trips cleanly instead of showing e.g. 72 hours.
-const startInDays = !!props.chore && props.chore.interval_hours % 24 === 0 && props.chore.interval_hours > 0
-const unit = ref(startInDays ? 'days' : 'hours')
+const startInDays = !!props.chore && props.chore.interval_hours % 24 === 0 && props.chore.interval_hours > 0;
+const unit = ref(startInDays ? 'days' : 'hours');
 const amount = ref(
   props.chore ? (startInDays ? props.chore.interval_hours / 24 : props.chore.interval_hours) : 24
-)
-const recurring = ref(props.chore ? props.chore.recurring : false)
-const error = ref('')
-const submitting = ref(false)
+);
+const recurring = ref(props.chore ? props.chore.recurring : false);
+const error = ref('');
+const submitting = ref(false);
 
 function setUnit(newUnit) {
-  if (unit.value === newUnit) return
-  unit.value = newUnit
-  amount.value = newUnit === 'days' ? 7 : 24
+  if (unit.value === newUnit) return;
+  unit.value = newUnit;
+  amount.value = newUnit === 'days' ? 7 : 24;
 }
 
 async function submit() {
-  if (submitting.value) return
+  if (submitting.value) return;
 
-  const intervalHours = unit.value === 'days' ? Number(amount.value) * 24 : Number(amount.value)
+  const intervalHours = unit.value === 'days' ? Number(amount.value) * 24 : Number(amount.value);
   if (!name.value.trim()) {
-    error.value = 'Give the chore a name.'
-    return
+    error.value = 'Give the chore a name.';
+    return;
   }
   if (!intervalHours || intervalHours <= 0) {
-    error.value = 'Set how much time is allowed before it is due.'
-    return
+    error.value = 'Set how much time is allowed before it is due.';
+    return;
   }
 
   const payload = {
@@ -46,21 +46,21 @@ async function submit() {
     description: description.value.trim(),
     intervalHours,
     recurring: recurring.value,
-  }
+  };
 
-  error.value = ''
-  submitting.value = true
+  error.value = '';
+  submitting.value = true;
   try {
     if (isEdit) {
-      await api.updateChore(props.chore.id, payload)
+      await api.updateChore(props.chore.id, payload);
     } else {
-      await api.createChore(payload)
+      await api.createChore(payload);
     }
-    emit('submit')
+    emit('submit');
   } catch (e) {
-    error.value = e.message
+    error.value = e.message;
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 </script>

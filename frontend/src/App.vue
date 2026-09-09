@@ -1,123 +1,132 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue'
-import ChoreCard from './components/ChoreCard.vue'
-import ChoreFormModal from './components/ChoreFormModal.vue'
-import LoginScreen from './components/LoginScreen.vue'
-import * as api from './api'
-import { getTheme, setTheme } from './theme'
+import { onMounted, onUnmounted, ref } from 'vue';
+import ChoreCard from './components/ChoreCard.vue';
+import ChoreFormModal from './components/ChoreFormModal.vue';
+import LoginScreen from './components/LoginScreen.vue';
+import * as api from './api';
+import { getTheme, setTheme } from './theme';
 
-const authChecked = ref(false)
-const passwordSet = ref(false)
-const authenticated = ref(true)
+const authChecked = ref(false);
+const passwordSet = ref(false);
+const authenticated = ref(true);
 
-const theme = ref(getTheme())
+const theme = ref(getTheme());
 
 function toggleTheme() {
-  const next = theme.value === 'dark' ? 'light' : 'dark'
-  setTheme(next)
-  theme.value = next
+  const next = theme.value === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+  theme.value = next;
 }
 
-const tab = ref('active')
-const chores = ref([])
-const completedChores = ref([])
-const loadError = ref('')
-const showForm = ref(false)
-const editingChore = ref(null)
-let refreshTimer
+const tab = ref('active');
+const chores = ref([]);
+const completedChores = ref([]);
+const loadError = ref('');
+const showForm = ref(false);
+const editingChore = ref(null);
+let refreshTimer;
 
 async function checkAuth() {
-  const status = await api.authStatus()
-  passwordSet.value = status.password_set
-  authenticated.value = status.authenticated
-  authChecked.value = true
+  const status = await api.authStatus();
+  passwordSet.value = status.password_set;
+  authenticated.value = status.authenticated;
+  authChecked.value = true;
 }
 
 async function refresh() {
-  if (!authenticated.value) return
+  if (!authenticated.value) return;
   try {
-    const [active, completed] = await Promise.all([api.listChores(), api.listCompletedChores()])
-    chores.value = active
-    completedChores.value = completed
-    loadError.value = ''
+    const [active, completed] = await Promise.all([api.listChores(), api.listCompletedChores()]);
+    chores.value = active;
+    completedChores.value = completed;
+    loadError.value = '';
   } catch (e) {
     if (e.status === 401) {
       // Session expired or the server restarted; re-check rather than
       // assuming - checkAuth is the source of truth for both flags.
-      await checkAuth()
-      return
+      await checkAuth();
+      return;
     }
-    loadError.value = e.message
+    loadError.value = e.message;
   }
 }
 
 function openAdd() {
-  editingChore.value = null
-  showForm.value = true
+  editingChore.value = null;
+  showForm.value = true;
 }
 
 function openEdit(chore) {
-  editingChore.value = chore
-  showForm.value = true
+  editingChore.value = chore;
+  showForm.value = true;
 }
 
 // ChoreFormModal makes the create/update API call itself and only emits
 // this once that actually succeeded, so there's nothing to catch here.
 async function handleSubmit() {
-  showForm.value = false
-  editingChore.value = null
-  await refresh()
+  showForm.value = false;
+  editingChore.value = null;
+  await refresh();
 }
 
 async function handleComplete(chore) {
   try {
-    await api.completeChore(chore.id)
-    await refresh()
+    await api.completeChore(chore.id);
+    await refresh();
   } catch (e) {
-    loadError.value = e.message
+    loadError.value = e.message;
   }
 }
 
 async function handleDelete(chore) {
   try {
-    await api.deleteChore(chore.id)
-    await refresh()
+    await api.deleteChore(chore.id);
+    await refresh();
   } catch (e) {
-    loadError.value = e.message
+    loadError.value = e.message;
   }
 }
 
 async function handleUndo(chore) {
   try {
-    await api.undoComplete(chore.id)
-    await refresh()
+    await api.undoComplete(chore.id);
+    await refresh();
   } catch (e) {
-    loadError.value = e.message
+    loadError.value = e.message;
+  }
+}
+
+async function handleSnooze(chore, hours) {
+  try {
+    await api.snoozeChore(chore.id, hours);
+    await refresh();
+  } catch (e) {
+    loadError.value = e.message;
   }
 }
 
 async function handleLoginSuccess() {
-  authenticated.value = true
-  await refresh()
+  authenticated.value = true;
+  await refresh();
 }
 
 async function handleLogout() {
   try {
-    await api.logout()
+    await api.logout();
   } catch (e) {
-    loadError.value = e.message
-    return
+    loadError.value = e.message;
+    return;
   }
-  authenticated.value = false
+  authenticated.value = false;
 }
 
 onMounted(async () => {
-  await checkAuth()
-  await refresh()
+  await checkAuth();
+  await refresh();
   // Bars are time-based, so keep them ticking down without a manual refresh.
-  refreshTimer = setInterval(refresh, 60_000)
-})
-onUnmounted(() => clearInterval(refreshTimer))
+  refreshTimer = setInterval(refresh, 60_000);
+});
+onUnmounted(() => clearInterval(refreshTimer));
 </script>
 
 <template>
@@ -194,6 +203,7 @@ onUnmounted(() => clearInterval(refreshTimer))
           @complete="handleComplete"
           @delete="handleDelete"
           @edit="openEdit"
+          @snooze="handleSnooze"
         />
       </div>
     </template>

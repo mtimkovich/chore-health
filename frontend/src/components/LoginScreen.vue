@@ -1,24 +1,24 @@
 <script setup>
-import { ref } from 'vue'
-import * as api from '../api'
+import { ref } from 'vue';
+import * as api from '../api';
 
-const emit = defineEmits(['success'])
+const emit = defineEmits(['success']);
 
-const password = ref('')
-const error = ref('')
-const submitting = ref(false)
+const password = ref('');
+const error = ref('');
+const submitting = ref(false);
 
 async function submit() {
-  if (!password.value || submitting.value) return
-  error.value = ''
-  submitting.value = true
+  if (!password.value || submitting.value) return;
+  error.value = '';
+  submitting.value = true;
   try {
-    await api.login(password.value)
-    emit('success')
+    await api.login(password.value);
+    emit('success');
   } catch (e) {
-    error.value = e.status === 401 ? 'Incorrect password.' : e.message
+    error.value = e.status === 401 ? 'Incorrect password.' : e.message;
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
 }
 </script>

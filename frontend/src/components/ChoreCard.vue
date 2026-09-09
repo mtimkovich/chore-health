@@ -1,78 +1,78 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { formatDuration } from '../duration'
+import { computed, ref } from 'vue';
+import { formatDuration } from '../duration';
 
 const props = defineProps({
   chore: { type: Object, required: true },
   completed: { type: Boolean, default: false },
-})
-const emit = defineEmits(['complete', 'undo', 'edit', 'delete'])
+});
+const emit = defineEmits(['complete', 'undo', 'edit', 'delete', 'snooze']);
 
-const open = ref(false)
-const confirmingDelete = ref(false)
-const celebrating = ref(false)
+const open = ref(false);
+const confirmingDelete = ref(false);
+const celebrating = ref(false);
 
 const reduceMotion =
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // Fixed burst of small pieces flying outward from the checkmark in a circle.
 const confettiPieces = Array.from({ length: 8 }, (_, i) => {
-  const angle = (i / 8) * Math.PI * 2
-  const distance = 30
+  const angle = (i / 8) * Math.PI * 2;
+  const distance = 30;
   return {
     dx: `${Math.cos(angle) * distance}px`,
     dy: `${Math.sin(angle) * distance}px`,
     delay: `${(i % 4) * 25}ms`,
     color: ['confetti-green', 'confetti-yellow', 'confetti-accent'][i % 3],
-  }
-})
+  };
+});
 
 const barColor = computed(() => {
-  if (props.chore.overdue) return 'red'
-  if (props.chore.percent_remaining <= 20) return 'red'
-  if (props.chore.percent_remaining <= 50) return 'yellow'
-  return 'green'
-})
+  if (props.chore.overdue) return 'red';
+  if (props.chore.percent_remaining <= 20) return 'red';
+  if (props.chore.percent_remaining <= 50) return 'yellow';
+  return 'green';
+});
 
 const statusText = computed(() => {
-  const label = formatDuration(Math.abs(props.chore.hours_left))
-  return props.chore.overdue ? `OVERDUE BY ${label}` : `~ ${label} LEFT`
-})
+  const label = formatDuration(Math.abs(props.chore.hours_left));
+  return props.chore.overdue ? `OVERDUE BY ${label}` : `~ ${label} LEFT`;
+});
 
 const expiresAtLabel = computed(() => {
-  const expiresAt = new Date(Date.now() + props.chore.hours_left * 3_600_000)
+  const expiresAt = new Date(Date.now() + props.chore.hours_left * 3_600_000);
   const formatted = expiresAt.toLocaleString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
-  })
-  return props.chore.overdue ? `Was due ${formatted}` : `Due ${formatted}`
-})
+  });
+  return props.chore.overdue ? `Was due ${formatted}` : `Due ${formatted}`;
+});
 
 const completedText = computed(() => {
-  const hoursAgo = (Date.now() - new Date(props.chore.last_completed_at).getTime()) / 3_600_000
-  if (hoursAgo < 1) return 'COMPLETED JUST NOW'
-  return `COMPLETED ${formatDuration(hoursAgo)} AGO`
-})
+  const hoursAgo = (Date.now() - new Date(props.chore.last_completed_at).getTime()) / 3_600_000;
+  if (hoursAgo < 1) return 'COMPLETED JUST NOW';
+  return `COMPLETED ${formatDuration(hoursAgo)} AGO`;
+});
 
 function toggleOpen() {
-  open.value = !open.value
-  confirmingDelete.value = false
+  open.value = !open.value;
+  confirmingDelete.value = false;
 }
 
 // Briefly celebrates before actually completing, so marking something done
 // feels like a small win instead of the card just vanishing. Skipped
 // entirely for anyone who's asked for less motion.
 function handleDone() {
-  if (celebrating.value) return
+  if (celebrating.value) return;
   if (reduceMotion) {
-    emit('complete', props.chore)
-    return
+    emit('complete', props.chore);
+    return;
   }
-  celebrating.value = true
-  setTimeout(() => emit('complete', props.chore), 1000)
+  celebrating.value = true;
+  setTimeout(() => emit('complete', props.chore), 1000);
 }
 </script>
 
@@ -163,6 +163,11 @@ function handleDone() {
           />
         </svg>
       </button>
+    </div>
+
+    <div v-if="open && !completed && !confirmingDelete && !celebrating" class="snooze-actions">
+      <button class="btn-snooze" @click="emit('snooze', chore, 1)">+1 HR</button>
+      <button class="btn-snooze" @click="emit('snooze', chore, 24)">+1 DAY</button>
     </div>
 
     <div v-if="open && confirmingDelete" class="confirm-row">

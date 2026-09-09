@@ -283,6 +283,28 @@ body {
   color: var(--text);
 }
 
+.snooze-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.snooze-actions button {
+  flex: 1;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.btn-snooze {
+  background: var(--track);
+  color: var(--muted);
+}
+
 .celebrate-banner {
   position: relative;
   display: flex;

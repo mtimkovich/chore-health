@@ -27,6 +27,7 @@ func main() {
 	mux.HandleFunc("PUT /api/chores/{id}", a.handleUpdateChore)
 	mux.HandleFunc("POST /api/chores/{id}/complete", a.handleCompleteChore)
 	mux.HandleFunc("POST /api/chores/{id}/undo", a.handleUndoComplete)
+	mux.HandleFunc("POST /api/chores/{id}/snooze", a.handleSnoozeChore)
 	mux.HandleFunc("DELETE /api/chores/{id}", a.handleDeleteChore)
 
 	mux.HandleFunc("GET /api/auth/status", a.handleAuthStatus)

@@ -203,6 +203,46 @@ func (a *app) handleUndoComplete(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toView(c))
 }
 
+type snoozeRequest struct {
+	Hours float64 `json:"hours"`
+}
+
+// handleSnoozeChore pushes a chore's due date out without marking it done -
+// e.g. for the "+1 HR"/"+1 DAY" buttons on an active chore's card.
+func (a *app) handleSnoozeChore(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid chore id")
+		return
+	}
+
+	var req snoozeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Hours <= 0 {
+		writeError(w, http.StatusBadRequest, "hours must be positive")
+		return
+	}
+
+	if err := snoozeChore(a.db, id, req.Hours); err != nil {
+		log.Println("snoozeChore:", err)
+		writeError(w, http.StatusInternalServerError, "failed to snooze chore")
+		return
+	}
+
+	c, err := getChore(a.db, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "chore not found")
+		return
+	} else if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load chore")
+		return
+	}
+	writeJSON(w, http.StatusOK, toView(c))
+}
+
 func (a *app) handleDeleteChore(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {

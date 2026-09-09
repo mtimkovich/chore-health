@@ -216,6 +216,26 @@ func undoComplete(db *sql.DB, id int64) error {
 	return nil
 }
 
+// snoozeChore pushes a chore's countdown out by the given number of hours,
+// capped so it can never end up with more than a full interval remaining.
+// Unlike completeChore it only touches countdown_started_at - last_completed_at
+// (and so isCompletedNow/the Completed tab) is untouched, since snoozing
+// isn't marking the chore done, just deferring it.
+func snoozeChore(db *sql.DB, id int64, hours float64) error {
+	current, err := getChore(db, id)
+	if err != nil {
+		return err
+	}
+
+	countdownStart := current.CountdownStartedAt.Add(time.Duration(hours * float64(time.Hour)))
+	if now := time.Now().UTC(); countdownStart.After(now) {
+		countdownStart = now
+	}
+
+	_, err = db.Exec(`UPDATE chores SET countdown_started_at = ? WHERE id = ?`, countdownStart, id)
+	return err
+}
+
 func deleteChore(db *sql.DB, id int64) error {
 	_, err := db.Exec(`DELETE FROM chores WHERE id = ?`, id)
 	return err
