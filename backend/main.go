@@ -17,10 +17,7 @@ func main() {
 	}
 	defer db.Close()
 
-	// The password is config, not data: it lives in an env var set outside
-	// the app (e.g. a launch script or docker-compose), never in the
-	// database and never exposed to the frontend to change. Unset means
-	// auth is disabled entirely.
+	// Password unset means auth is disabled entirely.
 	a := &app{db: db, sessions: newSessionStore(), password: os.Getenv("CHORE_HEALTH_PASSWORD")}
 
 	mux := http.NewServeMux()

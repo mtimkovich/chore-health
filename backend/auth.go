@@ -60,7 +60,7 @@ func setSessionCookie(w http.ResponseWriter, token string) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   30 * 24 * 60 * 60, // 30 days - this is a low-stakes local-network login
+		MaxAge:   90 * 24 * 60 * 60, // 90 days
 	})
 }
 
