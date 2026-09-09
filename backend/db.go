@@ -166,7 +166,7 @@ func updateChore(db *sql.DB, id int64, name, description string, intervalHours f
 
 	if hasBeenCompleted(current) {
 		countdownStart := time.Now().UTC()
-		if current.Recurring && isCompletedNow(current) {
+		if isDailyRecurring(current) && isCompletedNow(current) {
 			// Still hidden on the Completed tab pending midnight - keep the
 			// same "full interval once it's actually due again" behavior as
 			// completing it does, instead of starting the clock immediately.
@@ -188,11 +188,12 @@ func updateChore(db *sql.DB, id int64, name, description string, intervalHours f
 
 // completeChore stamps last_completed_at with now (saving the old value into
 // previous_completed_at so a single undoComplete can reverse it), and resets
-// countdown_started_at to match. A recurring chore's countdown starts fresh
-// at the local midnight after completion rather than the exact click, since
-// it's already off the active list until then (see isCompletedNow) - it
-// should reappear with its full interval intact rather than however much
-// had already ticked away since the click.
+// countdown_started_at to match. A daily-or-longer recurring chore's
+// countdown starts fresh at the local midnight after completion rather than
+// the exact click, since it's already off the active list until then (see
+// isCompletedNow) - it should reappear with its full interval intact rather
+// than however much had already ticked away since the click. A shorter-cycle
+// recurring chore just starts counting down immediately from the click.
 func completeChore(db *sql.DB, id int64) error {
 	current, err := getChore(db, id)
 	if err != nil {

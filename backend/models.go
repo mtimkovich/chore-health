@@ -84,17 +84,30 @@ func startOfNextLocalDay(t time.Time) time.Time {
 	return time.Date(y, m, d+1, 0, 0, 0, 0, t.Location())
 }
 
+// isDailyRecurring reports whether a chore is recurring with an interval of
+// a day or more - the cutoff for hiding until local midnight rather than
+// just reactivating once its own interval elapses. A chore that recurs
+// every couple hours shouldn't vanish until midnight over a single
+// completion; only daily-or-longer chores get that treatment.
+func isDailyRecurring(c Chore) bool {
+	return c.Recurring && c.IntervalHours >= 24
+}
+
 // isCompletedNow reports whether a chore currently belongs on the Completed
-// tab rather than the active list. A recurring chore stays there until
-// local midnight (then it's due again, same as any other active chore); a
-// non-recurring chore stays there for a full 24 hours before being cleared
-// out entirely by pruneExpiredChores.
+// tab rather than the active list. A daily-or-longer recurring chore stays
+// there until local midnight (then it's due again, same as any other active
+// chore); a shorter-cycle recurring chore or a non-recurring one stays
+// there until its own interval elapses (capped at 24 hours for non-recurring,
+// which otherwise has no interval-driven reason to ever be pruned).
 func isCompletedNow(c Chore) bool {
 	if !hasBeenCompleted(c) {
 		return false
 	}
-	if c.Recurring {
+	if isDailyRecurring(c) {
 		return sameLocalDay(c.LastCompletedAt, time.Now())
+	}
+	if c.Recurring {
+		return time.Since(c.LastCompletedAt) < time.Duration(c.IntervalHours*float64(time.Hour))
 	}
 	return time.Since(c.LastCompletedAt) < 24*time.Hour
 }
