@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"errors"
-	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -32,31 +31,6 @@ func openDB(path string) (*sql.DB, error) {
 		created_at                      DATETIME NOT NULL
 	);`
 	if _, err := db.Exec(schema); err != nil {
-		return nil, err
-	}
-
-	// Databases created before these columns existed need them added
-	// separately; CREATE TABLE IF NOT EXISTS is a no-op for them.
-	for _, migration := range []string{
-		`ALTER TABLE chores ADD COLUMN description TEXT NOT NULL DEFAULT ''`,
-		`ALTER TABLE chores ADD COLUMN previous_completed_at DATETIME`,
-		`ALTER TABLE chores ADD COLUMN countdown_started_at DATETIME`,
-		`ALTER TABLE chores ADD COLUMN previous_countdown_started_at DATETIME`,
-	} {
-		if _, err := db.Exec(migration); err != nil {
-			if !strings.Contains(err.Error(), "duplicate column name") {
-				return nil, err
-			}
-		}
-	}
-
-	// Backfill countdown_started_at for rows from before it existed (it
-	// can't carry a static DEFAULT since it's derived from another column).
-	// last_completed_at is a reasonable stand-in: for a never-completed
-	// chore it already equals created_at, and for one that's been completed
-	// it just means one fewer "reset to full" cycle at its next midnight,
-	// which corrects itself the next time it's completed or edited.
-	if _, err := db.Exec(`UPDATE chores SET countdown_started_at = last_completed_at WHERE countdown_started_at IS NULL`); err != nil {
 		return nil, err
 	}
 
