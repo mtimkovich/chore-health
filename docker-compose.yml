@@ -10,3 +10,4 @@ services:
       - ./data:/data
     environment:
       - CHORE_HEALTH_PASSWORD=admin
+      - TZ=America/Los_Angeles
