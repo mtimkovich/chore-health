@@ -15,18 +15,6 @@ const celebrating = ref(false);
 const reduceMotion =
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Fixed burst of small pieces flying outward from the checkmark in a circle.
-const confettiPieces = Array.from({ length: 8 }, (_, i) => {
-  const angle = (i / 8) * Math.PI * 2;
-  const distance = 30;
-  return {
-    dx: `${Math.cos(angle) * distance}px`,
-    dy: `${Math.sin(angle) * distance}px`,
-    delay: `${(i % 4) * 25}ms`,
-    color: ['confetti-green', 'confetti-yellow', 'confetti-accent'][i % 3],
-  };
-});
-
 const barColor = computed(() => {
   if (props.chore.overdue) return 'red';
   if (props.chore.percent_remaining <= 20) return 'red';
@@ -118,13 +106,6 @@ function handleDone() {
         <path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
       <span>Nice work!</span>
-      <span
-        v-for="(p, i) in confettiPieces"
-        :key="i"
-        class="confetti-piece"
-        :class="p.color"
-        :style="{ '--dx': p.dx, '--dy': p.dy, animationDelay: p.delay }"
-      ></span>
     </div>
 
     <div v-else-if="open && !confirmingDelete" class="card-actions">
