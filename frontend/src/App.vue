@@ -11,6 +11,7 @@ const passwordSet = ref(false);
 const authenticated = ref(true);
 
 const theme = ref(getTheme());
+const year = new Date().getFullYear();
 
 function toggleTheme() {
   const next = theme.value === 'dark' ? 'light' : 'dark';
@@ -232,5 +233,7 @@ onUnmounted(() => clearInterval(refreshTimer));
       @submit="handleSubmit"
       @cancel="showForm = false"
     />
+
+    <footer class="app-footer">&copy; {{ year }} Max Timkovich</footer>
   </template>
 </template>
