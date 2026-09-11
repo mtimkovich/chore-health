@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 import ChoreCard from './components/ChoreCard.vue';
 import ChoreFormModal from './components/ChoreFormModal.vue';
 import LoginScreen from './components/LoginScreen.vue';
@@ -26,6 +26,35 @@ const loadError = ref('');
 const showForm = ref(false);
 const editingChore = ref(null);
 let refreshTimer;
+
+// Buckets for grouping the active list by how far out a chore is due, checked
+// in order - the first threshold a chore's hours_left falls under wins.
+const dueGroups = [
+  { label: 'DUE SOON', maxHours: 24 },
+  { label: 'DUE THIS WEEK', maxHours: 24 * 7 },
+  { label: 'DUE THIS MONTH', maxHours: 24 * 30 },
+  { label: 'DUE LATER', maxHours: Infinity },
+];
+
+// chores is already sorted soonest-first by the API, so grouping it is a
+// single pass: only start a new group when the bucket actually changes.
+const groupedChores = computed(() => {
+  const groups = [];
+  for (const chore of chores.value) {
+    const bucket = dueGroups.find((g) => chore.hours_left < g.maxHours) ?? dueGroups[dueGroups.length - 1];
+    const current = groups[groups.length - 1];
+    if (current && current.label === bucket.label) {
+      current.chores.push(chore);
+    } else {
+      groups.push({ label: bucket.label, chores: [chore] });
+    }
+  }
+  return groups;
+});
+
+// A short list doesn't need to be told everything in it is "due soon" - only
+// show the group headers once there's an actual split to call out.
+const showGroupLabels = computed(() => groupedChores.value.length > 1);
 
 async function checkAuth() {
   const status = await api.authStatus();
@@ -188,7 +217,7 @@ onUnmounted(() => clearInterval(refreshTimer));
     <p v-if="loadError" class="error-text" style="margin: 0 20px 16px">{{ loadError }}</p>
 
     <template v-if="tab === 'active'">
-      <div class="section-label">ACTIVE CHORES</div>
+      <div class="section-label">ACTIVE CHORES<span v-if="chores.length" class="section-count"> ({{ chores.length }})</span></div>
 
       <button class="add-chore-btn" @click="openAdd">+ Add Chore</button>
 
@@ -196,17 +225,20 @@ onUnmounted(() => clearInterval(refreshTimer));
         No chores yet. Tap + to add one.
       </div>
 
-      <div class="chore-list">
-        <ChoreCard
-          v-for="chore in chores"
-          :key="chore.id"
-          :chore="chore"
-          @complete="handleComplete"
-          @delete="handleDelete"
-          @edit="openEdit"
-          @snooze="handleSnooze"
-        />
-      </div>
+      <template v-for="group in groupedChores" :key="group.label">
+        <div v-if="showGroupLabels" class="group-label">{{ group.label }}</div>
+        <div class="chore-list">
+          <ChoreCard
+            v-for="chore in group.chores"
+            :key="chore.id"
+            :chore="chore"
+            @complete="handleComplete"
+            @delete="handleDelete"
+            @edit="openEdit"
+            @snooze="handleSnooze"
+          />
+        </div>
+      </template>
     </template>
 
     <template v-else>
