@@ -147,7 +147,6 @@ function handleDone() {
     </div>
 
     <div v-if="open && !completed && !confirmingDelete && !celebrating" class="snooze-actions">
-      <button class="btn-snooze" @click="emit('snooze', chore, 1)">+1 HR</button>
       <button class="btn-snooze" @click="emit('snooze', chore, 24)">+1 DAY</button>
     </div>
 
