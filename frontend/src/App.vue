@@ -27,26 +27,36 @@ const showForm = ref(false);
 const editingChore = ref(null);
 let refreshTimer;
 
-// Buckets for grouping the active list by how far out a chore is due, checked
-// in order - the first threshold a chore's hours_left falls under wins.
-const dueGroups = [
-  { label: 'DUE SOON', maxHours: 24 },
-  { label: 'DUE THIS WEEK', maxHours: 24 * 7 },
-  { label: 'DUE THIS MONTH', maxHours: 24 * 30 },
-  { label: 'DUE LATER', maxHours: Infinity },
-];
+// Buckets for grouping the active list by how far out a chore is due. SOON
+// and THIS WEEK are rolling windows off "now"; THIS MONTH is a calendar-month
+// boundary instead of a rolling 30 days - a chore due in 22 days can still
+// land in next month on the calendar, which isn't "this month" even though
+// it's under 30 days out.
+function startOfNextLocalMonth(d) {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 1);
+}
+
+function bucketFor(chore, now) {
+  if (chore.hours_left < 0) return 'OVERDUE';
+  if (chore.hours_left < 24) return 'DUE SOON';
+  if (chore.hours_left < 24 * 7) return 'DUE THIS WEEK';
+  const dueAt = new Date(now.getTime() + chore.hours_left * 3_600_000);
+  if (dueAt < startOfNextLocalMonth(now)) return 'DUE THIS MONTH';
+  return 'DUE LATER';
+}
 
 // chores is already sorted soonest-first by the API, so grouping it is a
 // single pass: only start a new group when the bucket actually changes.
 const groupedChores = computed(() => {
+  const now = new Date();
   const groups = [];
   for (const chore of chores.value) {
-    const bucket = dueGroups.find((g) => chore.hours_left < g.maxHours) ?? dueGroups[dueGroups.length - 1];
+    const label = bucketFor(chore, now);
     const current = groups[groups.length - 1];
-    if (current && current.label === bucket.label) {
+    if (current && current.label === label) {
       current.chores.push(chore);
     } else {
-      groups.push({ label: bucket.label, chores: [chore] });
+      groups.push({ label, chores: [chore] });
     }
   }
   return groups;
