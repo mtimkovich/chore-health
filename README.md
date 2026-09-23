@@ -82,7 +82,7 @@ completions), and a `recurring` flag:
 - **Recurring** chores reset their countdown when marked done, and move to the
   Completed tab until local midnight.
 - **Non-recurring** chores move to the Completed tab when marked done and are
-  permanently deleted 24 hours later.
+  permanently deleted a week later.
 
 Any chore can also be deleted outright regardless of its recurring setting.
 

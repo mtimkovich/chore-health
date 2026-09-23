@@ -216,7 +216,7 @@ func deleteChore(db *sql.DB, id int64) error {
 }
 
 // pruneExpiredChores permanently deletes non-recurring chores that have sat
-// completed past isCompletedNow's 24-hour window, and returns what's left.
+// completed past isCompletedNow's one-week window, and returns what's left.
 func pruneExpiredChores(db *sql.DB, chores []Chore) ([]Chore, error) {
 	remaining := chores[:0]
 	for _, c := range chores {

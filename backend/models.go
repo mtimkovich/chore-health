@@ -96,9 +96,10 @@ func isDailyRecurring(c Chore) bool {
 // isCompletedNow reports whether a chore currently belongs on the Completed
 // tab rather than the active list. A daily-or-longer recurring chore stays
 // there until local midnight (then it's due again, same as any other active
-// chore); a shorter-cycle recurring chore or a non-recurring one stays
-// there until its own interval elapses (capped at 24 hours for non-recurring,
-// which otherwise has no interval-driven reason to ever be pruned).
+// chore); a shorter-cycle recurring chore stays there until its own interval
+// elapses; a non-recurring one stays there for a week (it has no
+// interval-driven reason to ever be pruned, so this is just a grace period
+// before pruneExpiredChores clears it out for good).
 func isCompletedNow(c Chore) bool {
 	if !hasBeenCompleted(c) {
 		return false
@@ -109,5 +110,5 @@ func isCompletedNow(c Chore) bool {
 	if c.Recurring {
 		return time.Since(c.LastCompletedAt) < time.Duration(c.IntervalHours*float64(time.Hour))
 	}
-	return time.Since(c.LastCompletedAt) < 24*time.Hour
+	return time.Since(c.LastCompletedAt) < 7*24*time.Hour
 }

@@ -147,7 +147,7 @@ func (a *app) handleUpdateChore(w http.ResponseWriter, r *http.Request) {
 
 // handleCompleteChore resets a chore's countdown to now. From there,
 // isCompletedNow decides how long it stays on the Completed tab: a
-// recurring chore until local midnight, a non-recurring one for 24 hours
+// recurring chore until local midnight, a non-recurring one for a week
 // before pruneExpiredChores deletes it for good.
 func (a *app) handleCompleteChore(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
