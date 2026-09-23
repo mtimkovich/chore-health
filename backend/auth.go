@@ -2,47 +2,53 @@ package main
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
 const sessionCookieName = "chore_health_session"
 
-// sessionStore tracks logged-in sessions in memory. That's plenty for a
-// single-user app on a local network: no persistence needed, and a server
-// restart just means logging in again.
+// sessionMaxAge matches the session cookie's own MaxAge - a session past
+// this age is treated as expired even if its row is still in the database.
+const sessionMaxAge = 90 * 24 * time.Hour
+
+// sessionStore checks logins against the sessions table instead of an
+// in-memory map, so they survive a server restart instead of forcing
+// everyone to log back in.
 type sessionStore struct {
-	mu       sync.Mutex
-	sessions map[string]time.Time
+	db *sql.DB
 }
 
-func newSessionStore() *sessionStore {
-	return &sessionStore{sessions: make(map[string]time.Time)}
+// newSessionStore also clears out any sessions that have already aged past
+// sessionMaxAge, so the table doesn't just grow forever.
+func newSessionStore(db *sql.DB) (*sessionStore, error) {
+	if _, err := db.Exec(`DELETE FROM sessions WHERE created_at < ?`, time.Now().UTC().Add(-sessionMaxAge)); err != nil {
+		return nil, err
+	}
+	return &sessionStore{db: db}, nil
 }
 
-func (s *sessionStore) create() string {
+func (s *sessionStore) create() (string, error) {
 	token := randomToken()
-	s.mu.Lock()
-	s.sessions[token] = time.Now()
-	s.mu.Unlock()
-	return token
+	_, err := s.db.Exec(`INSERT INTO sessions (token, created_at) VALUES (?, ?)`, token, time.Now().UTC())
+	return token, err
 }
 
 func (s *sessionStore) valid(token string) bool {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	_, ok := s.sessions[token]
-	return ok
+	var createdAt time.Time
+	if err := s.db.QueryRow(`SELECT created_at FROM sessions WHERE token = ?`, token).Scan(&createdAt); err != nil {
+		return false
+	}
+	return time.Since(createdAt) < sessionMaxAge
 }
 
 func (s *sessionStore) revoke(token string) {
-	s.mu.Lock()
-	delete(s.sessions, token)
-	s.mu.Unlock()
+	s.db.Exec(`DELETE FROM sessions WHERE token = ?`, token)
 }
 
 func randomToken() string {
@@ -60,7 +66,7 @@ func setSessionCookie(w http.ResponseWriter, token string) {
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   90 * 24 * 60 * 60, // 90 days
+		MaxAge:   int(sessionMaxAge.Seconds()),
 	})
 }
 
@@ -128,7 +134,13 @@ func (a *app) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setSessionCookie(w, a.sessions.create())
+	token, err := a.sessions.create()
+	if err != nil {
+		log.Println("sessions.create:", err)
+		writeError(w, http.StatusInternalServerError, "failed to create session")
+		return
+	}
+	setSessionCookie(w, token)
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 

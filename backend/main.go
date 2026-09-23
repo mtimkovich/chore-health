@@ -17,8 +17,13 @@ func main() {
 	}
 	defer db.Close()
 
+	sessions, err := newSessionStore(db)
+	if err != nil {
+		log.Fatalf("failed to initialize session store: %v", err)
+	}
+
 	// Password unset means auth is disabled entirely.
-	a := &app{db: db, sessions: newSessionStore(), password: os.Getenv("CHORE_HEALTH_PASSWORD")}
+	a := &app{db: db, sessions: sessions, password: os.Getenv("CHORE_HEALTH_PASSWORD")}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/chores", a.handleListChores)

@@ -34,6 +34,15 @@ func openDB(path string) (*sql.DB, error) {
 		return nil, err
 	}
 
+	const sessionsSchema = `
+	CREATE TABLE IF NOT EXISTS sessions (
+		token       TEXT PRIMARY KEY,
+		created_at  DATETIME NOT NULL
+	);`
+	if _, err := db.Exec(sessionsSchema); err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }
 

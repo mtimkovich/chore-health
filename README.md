@@ -100,5 +100,5 @@ to the database, and unsetting it (or leaving it unset) disables auth
 entirely.
 
 Once a password is set, the app shows a login screen and a logout button
-appears in the header; sessions are an in-memory cookie, so restarting the
-backend logs everyone out.
+appears in the header. Sessions are stored in the database and last 90 days
+(matching the cookie), so a server restart doesn't log anyone out.
