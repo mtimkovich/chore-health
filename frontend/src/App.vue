@@ -47,24 +47,75 @@ function bucketFor(chore, now) {
 
 // chores is already sorted soonest-first by the API, so grouping it is a
 // single pass: only start a new group when the bucket actually changes.
-const groupedChores = computed(() => {
+function buildLayout(list) {
   const now = new Date();
   const groups = [];
-  for (const chore of chores.value) {
+  for (const chore of list) {
     const label = bucketFor(chore, now);
     const current = groups[groups.length - 1];
     if (current && current.label === label) {
-      current.chores.push(chore);
+      current.ids.push(chore.id);
     } else {
-      groups.push({ label, chores: [chore] });
+      groups.push({ label, ids: [chore.id] });
     }
   }
-  return groups;
-});
+  // A short list doesn't need to be told everything in it is "due soon" -
+  // only show group headers once there's an actual split to call out.
+  const showLabels = groups.length > 1;
+  const rows = [];
+  for (const group of groups) {
+    if (showLabels) rows.push({ type: 'label', key: `label:${group.label}`, label: group.label });
+    for (const id of group.ids) rows.push({ type: 'chore', key: id, id });
+  }
+  return rows;
+}
 
-// A short list doesn't need to be told everything in it is "due soon" - only
-// show the group headers once there's an actual split to call out.
-const showGroupLabels = computed(() => groupedChores.value.length > 1);
+// Which chore cards are currently expanded. While a card is open, its
+// position (and the group header above it) is frozen - see applyActiveChores
+// - so e.g. tapping +1 DAY on a chore repeatedly doesn't move the button out
+// from under a second tap just because that snooze pushed it into a
+// different due-date bucket.
+const openIds = new Set();
+
+// The active list's order/grouping, separate from the chores themselves so
+// it can be held in place independently of their live data.
+const activeLayout = ref([]);
+
+const choresById = computed(() => new Map(chores.value.map((c) => [c.id, c])));
+
+// Resolves the (possibly frozen) layout against current chore data, so the
+// numbers on an open card stay live even while its position doesn't move.
+// Filters out any row whose chore has left the active list entirely (e.g.
+// completed elsewhere) since a frozen layout can otherwise still reference it.
+const activeRows = computed(() =>
+  activeLayout.value
+    .map((row) => (row.type === 'chore' ? { ...row, chore: choresById.value.get(row.id) } : row))
+    .filter((row) => row.type !== 'chore' || row.chore)
+);
+
+function applyActiveChores(list) {
+  chores.value = list;
+  const liveIds = new Set(list.map((c) => c.id));
+  for (const id of openIds) {
+    if (!liveIds.has(id)) openIds.delete(id);
+  }
+  // Only re-sort/re-group while nothing is open - otherwise leave the
+  // existing layout alone.
+  if (openIds.size === 0) {
+    activeLayout.value = buildLayout(list);
+  }
+}
+
+function handleToggleOpen(id, isOpen) {
+  if (isOpen) {
+    openIds.add(id);
+    return;
+  }
+  openIds.delete(id);
+  if (openIds.size === 0) {
+    activeLayout.value = buildLayout(chores.value);
+  }
+}
 
 async function checkAuth() {
   const status = await api.authStatus();
@@ -77,7 +128,7 @@ async function refresh() {
   if (!authenticated.value) return;
   try {
     const [active, completed] = await Promise.all([api.listChores(), api.listCompletedChores()]);
-    chores.value = active;
+    applyActiveChores(active);
     completedChores.value = completed;
     loadError.value = '';
   } catch (e) {
@@ -235,20 +286,20 @@ onUnmounted(() => clearInterval(refreshTimer));
         No chores yet. Tap + to add one.
       </div>
 
-      <template v-for="group in groupedChores" :key="group.label">
-        <div v-if="showGroupLabels" class="group-label">{{ group.label }}</div>
-        <div class="chore-list">
+      <TransitionGroup tag="div" class="chore-list" name="chore">
+        <template v-for="row in activeRows" :key="row.key">
+          <div v-if="row.type === 'label'" class="group-label">{{ row.label }}</div>
           <ChoreCard
-            v-for="chore in group.chores"
-            :key="chore.id"
-            :chore="chore"
+            v-else
+            :chore="row.chore"
             @complete="handleComplete"
             @delete="handleDelete"
             @edit="openEdit"
             @snooze="handleSnooze"
+            @toggle-open="handleToggleOpen(row.id, $event)"
           />
-        </div>
-      </template>
+        </template>
+      </TransitionGroup>
     </template>
 
     <template v-else>

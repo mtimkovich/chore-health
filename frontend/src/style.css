@@ -138,7 +138,10 @@ body {
   font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--muted);
-  margin: 20px 20px 10px;
+  /* .chore-list's own gap already provides the bulk of the spacing above and
+     below - these just nudge it closer to how it looked before the active
+     list became one flat, animatable TransitionGroup. */
+  margin: 6px 20px 4px;
 }
 
 .chore-list {
@@ -146,6 +149,16 @@ body {
   flex-direction: column;
   gap: 14px;
   padding: 0 20px;
+}
+
+.chore-move {
+  transition: transform 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chore-move {
+    transition: none;
+  }
 }
 
 .empty-state {

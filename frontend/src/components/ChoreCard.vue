@@ -6,7 +6,7 @@ const props = defineProps({
   chore: { type: Object, required: true },
   completed: { type: Boolean, default: false },
 });
-const emit = defineEmits(['complete', 'undo', 'edit', 'delete', 'snooze']);
+const emit = defineEmits(['complete', 'undo', 'edit', 'delete', 'snooze', 'toggle-open']);
 
 const open = ref(false);
 const confirmingDelete = ref(false);
@@ -51,6 +51,7 @@ const completedText = computed(() => {
 function toggleOpen() {
   open.value = !open.value;
   confirmingDelete.value = false;
+  emit('toggle-open', open.value);
 }
 
 // Briefly celebrates before actually completing, so marking something done
