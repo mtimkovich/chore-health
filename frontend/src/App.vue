@@ -11,7 +11,6 @@ const passwordSet = ref(false);
 const authenticated = ref(true);
 
 const theme = ref(getTheme());
-const year = new Date().getFullYear();
 
 function toggleTheme() {
   const next = theme.value === 'dark' ? 'light' : 'dark';
@@ -39,6 +38,7 @@ function startOfNextLocalMonth(d) {
 function bucketFor(chore, now) {
   if (chore.hours_left < 0) return 'OVERDUE';
   if (chore.hours_left < 24) return 'DUE SOON';
+  if (chore.hours_left < 48) return 'DUE TOMORROW';
   if (chore.hours_left < 24 * 7) return 'DUE THIS WEEK';
   const dueAt = new Date(now.getTime() + chore.hours_left * 3_600_000);
   if (dueAt < startOfNextLocalMonth(now)) return 'DUE THIS MONTH';
@@ -275,7 +275,5 @@ onUnmounted(() => clearInterval(refreshTimer));
       @submit="handleSubmit"
       @cancel="showForm = false"
     />
-
-    <footer class="app-footer">&copy; {{ year }} Max Timkovich</footer>
   </template>
 </template>

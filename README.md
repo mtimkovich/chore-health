@@ -4,6 +4,8 @@ Tracks chores as countdowns, styled after the Roomba "Product Health" screen —
 chore is a card with a draining progress bar and an "~N HRS LEFT" readout, sorted so
 the most urgent chore is always on top.
 
+![Chore Health screenshot](docs/screenshot.png)
+
 - **Backend**: Go (`net/http`, SQLite via `modernc.org/sqlite`, no cgo needed)
 - **Frontend**: Vue 3 + Vite
 - **DB**: SQLite file at `backend/chores.db` (created automatically on first run)

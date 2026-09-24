@@ -6,6 +6,9 @@ function duration(count, word) {
 // matching how the Roomba health screen phrases "time left" for a part.
 export function formatDuration(hoursAbs) {
   const totalHours = Math.round(hoursAbs);
+  if (totalHours === 0) {
+    return '< 1 HR';
+  }
   if (totalHours < 24) {
     return duration(totalHours, 'HR');
   }

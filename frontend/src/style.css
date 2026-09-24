@@ -618,11 +618,3 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
-
-.app-footer {
-  margin-top: 32px;
-  padding: 0 20px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 12px;
-}

@@ -24,7 +24,10 @@ const barColor = computed(() => {
 
 const statusText = computed(() => {
   const label = formatDuration(Math.abs(props.chore.hours_left));
-  return props.chore.overdue ? `OVERDUE BY ${label}` : `~ ${label} LEFT`;
+  // "~" signals an approximation, which reads oddly stacked in front of the
+  // "< 1 HR" label's own approximation marker - so drop it in that case.
+  const approx = label.startsWith('<') ? label : `~ ${label}`;
+  return props.chore.overdue ? `OVERDUE BY ${label}` : `${approx} LEFT`;
 });
 
 const expiresAtLabel = computed(() => {
