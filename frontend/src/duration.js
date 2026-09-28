@@ -5,10 +5,10 @@ function duration(count, word) {
 // Formats an hour count as the largest whole unit that keeps it readable,
 // matching how the Roomba health screen phrases "time left" for a part.
 export function formatDuration(hoursAbs) {
-  const totalHours = Math.round(hoursAbs);
-  if (totalHours === 0) {
+  if (hoursAbs < 1) {
     return '< 1 HR';
   }
+  const totalHours = Math.round(hoursAbs);
   if (totalHours < 24) {
     return duration(totalHours, 'HR');
   }
