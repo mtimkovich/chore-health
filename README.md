@@ -15,8 +15,7 @@ the most urgent chore is always on top.
 Each chore has a name, an `interval_hours` (how long it's allowed to go between
 completions), and a `recurring` flag:
 
-- **Recurring** chores reset their countdown when marked done, and move to the
-  Completed tab until local midnight.
+- **Recurring** chores reset their countdown when marked done, and become active again at midnight.
 - **Non-recurring** chores move to the Completed tab when marked done and are
   permanently deleted a week later.
 
