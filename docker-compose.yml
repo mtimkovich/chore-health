@@ -9,5 +9,5 @@ services:
     volumes:
       - ./data:/data
     environment:
-      - CHORE_HEALTH_PASSWORD=admin
-      - TZ=America/Los_Angeles
+      - CHORE_HEALTH_PASSWORD=${CHORE_HEALTH_PASSWORD:-}
+      - TZ=${TZ:-}

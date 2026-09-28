@@ -48,6 +48,7 @@ Or with `docker-compose.yml` (bind-mounts `./data` instead of a named
 volume, and builds the image itself):
 
 ```bash
+cp .env.example .env   # fill in a password and timezone, or leave blank
 docker compose up -d --build
 ```
 
@@ -69,7 +70,7 @@ mkdir -p data
 sudo chown -R 10001:10001 data
 ```
 
-Useful env vars (see `docker run -e NAME=value ...`):
+Useful env vars (`docker run -e NAME=value ...`, or set them in `.env` for compose):
 
 - `CHORE_HEALTH_PASSWORD` — see [Password protection](#password-protection) below.
 - `TZ` (e.g. `TZ=America/New_York`) — containers default to UTC, and this app's
